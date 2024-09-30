@@ -36,7 +36,7 @@ The configuration takes the following variables.
 + Scheduler Functions:
     -
     -
-    -
+    - get_snapshot(): 
 
 + Robot Functions:
     -
