@@ -7,6 +7,7 @@ A simulator for Look Compute Move robots in the Asynchronous System
 `python run.py config.json`
 
 The configuration takes the following variables.
+
 - number of robots
 - initial position (can be random) : list of points in 2D
 - speed of robots : number or a list
@@ -17,9 +18,10 @@ The configuration takes the following variables.
 - multiplicity detection
 - colors
 - obstructed visibility
-- rigidity 
+- rigidity
 
 ## Default Configuration
+
 - Unlimited visibility
 - No Multiplicity detection
 - Ignore Collisions
@@ -27,22 +29,31 @@ The configuration takes the following variables.
 - Rigid movement
 
 ## Files
+
 - config.json
 - scheduler.py
 - robot.py
 - run.py
 
 ## Functions
-+ Scheduler Functions:
-    -
-    -
-    - get_snapshot(): 
 
-+ Robot Functions:
-    -
-    -
-    -
+- Scheduler Functions:
+
+  - get_snapshot(): Dict[int, Tuple[Tuple[float, float], str]]
+  - generate_event(): None
+  - handle_event(event: tuple[int, str, float]): None
+
+- Robot Functions:
+  - look(): None
+  - compute(): None
+  - move(): None
+  - get_position(): tuple[float, float]
+  - convert_coordinate(tuple[x: float, y: float]): tuple[float, float]
 
 ## Data Structures
-+ Snapshot: Dictionary of ID, Position, Color (optional)
-+ Priority Queue
+
+- Snapshot: Dictionary of ID, Position, Color (optional)
+- Priority Queue: Each element contains a 3-tuple containing
+  - robot_id: int
+  - state: str (either "look", "compute", "move")
+  - time: float
