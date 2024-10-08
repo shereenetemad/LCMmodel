@@ -1,0 +1,16 @@
+{
+  "number_of_robots": 2,
+  "initial_positions": [
+    [-5.0, 5.0],
+    [0.0, 0.0]
+  ],
+  "robot_speeds": 1.0,
+  "scheduler_type": "async",
+  "probability_distribution": "gaussian",
+  "visibility_radius": 100,
+  "robot_orientations": [0, 0, 0],
+  "multiplicity_detection": false,
+  "robot_colors": "#000000",
+  "obstruct_visibility": false,
+  "rigidity": true
+}
