@@ -11,6 +11,6 @@
   "robot_orientations": [0, 0, 0],
   "multiplicity_detection": false,
   "robot_colors": "#000000",
-  "obstruct_visibility": false,
-  "rigidity": true
+  "obstructed_visibility": false,
+  "rigid_movement": true
 }
