@@ -1,6 +1,6 @@
+from robot_states import RobotStates
+
 class Robot:
-    
-    
     def __init__(self, speed: float, color: str, visibility_radius: float, orientation: tuple(float, float, float), obstructed_visibility: bool, multiplicity_detection: bool, rigid_movement: bool):
         self.speed = speed
         self.color = color
@@ -11,7 +11,11 @@ class Robot:
         self.orientation = orientation
         self.start_time = None
         self.end_time = None
+        self.current_time = None
+        self.state = RobotStates.SLEEP
         self.calculated_position = None
+        self.number_of_activations = 0
+        self.travelled_distance = 0
         pass
         
     def look(self) -> None:
