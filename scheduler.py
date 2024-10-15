@@ -1,4 +1,4 @@
-from enums import SchedulerType, DistributionType
+from enums import *
 from type_defs import *
 from robot import Robot
 import numpy as np
@@ -11,23 +11,42 @@ class Scheduler:
         
         self.robots: list[Robot] = []
         for i in range(num_of_robots):
-            new_robot = Robot(id = i)
+            new_robot = Robot(id = i, coordinates=tuple(initial_positions[i]))
             self.robots.append(new_robot)
             
         self.initialize_queue_exponential()
     
-    def get_snapshot(self) -> dict[int, tuple[Coordinates,str]]:
+    def get_snapshot(self, time: float) -> dict[int, tuple[Coordinates,str]]:
         snapshot = {}
         for robot in self.robots:
-            snapshot[robot.id] = (robot.get_position(), robot.color)
+            snapshot[robot.id] = (robot.get_position(time), robot.color)
 
         return snapshot
 
-    def generate_event(self) -> None:
-        pass
+    def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
+        new_event_time = current_event[2] + self.generator.exponential(scale=1/ self.lambda_rate)
+        new_event = (new_event_time, (current_event[0], current_event[1].next_state(), new_event_time))
+        
+        heapq.heappush(self.priority_queue, new_event)
     
-    def handle_event(self, event: tuple[int, str, float]) -> None:
-        pass
+    def handle_event(self) -> None:
+        
+        next_event = heapq.heappop(self.priority_queue)[1]
+        self.generate_event(next_event)
+        
+        next_state = next_event[1]
+        robot = self.robots[next_event[0]]
+        time = next_event[2]
+        
+        if next_state == RobotState.LOOK:
+            robot.state = RobotState.LOOK
+            robot.look(self.get_snapshot(time))
+        elif next_state == RobotState.MOVE:
+            robot.state = RobotState.MOVE
+            robot.move(time)
+        elif next_state == RobotState.WAIT:
+            robot.state = RobotState.WAIT
+            robot.wait(time)
 
     def initialize_queue(self) -> None:
         # Set the lambda parameter (average rate of occurrences)
@@ -45,23 +64,23 @@ class Scheduler:
         
     def initialize_queue_exponential(self) -> None:
         # Set the rate parameter (lambda)
-        lambda_rate = 5  # Average number of events per time unit
+        self.lambda_rate = 5  # Average number of events per time unit
         
         # Generate a random number
-        seed = np.random.default_rng().integers(0, 2**32 - 1)  # Random integer in the range of 0 to 2^32-1
+        self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
 
         # Generate time intervals for n events
-        generator = np.random.default_rng(seed = seed)
-        n_events = len(self.robots)
-        time_intervals = generator.exponential(scale=1/ lambda_rate, size=n_events)
+        self.generator = np.random.default_rng(seed = self.generator_seed)
+        num_of_events = len(self.robots)
+        time_intervals = self.generator.exponential(scale=1/ self.lambda_rate, size=num_of_events)
 
         print("Time intervals between events:", time_intervals)
         
-        self.priority_queue: list[tuple[Priority, tuple[Id, State, Time]]] = []
+        self.priority_queue: list[tuple[Priority, tuple[Id, RobotState, Time]]] = []
         
         for robot in self.robots:
             time = time_intervals[robot.id]
-            item = (robot.id, robot.state, time)
+            item = (robot.id, robot.state.next_state(), time)
             self.priority_queue.append((time, item))
             
         heapq.heapify(self.priority_queue)
