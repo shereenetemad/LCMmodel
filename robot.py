@@ -1,8 +1,9 @@
 from enums import RobotState
 from type_defs import *
+import math
 
 class Robot:
-    def __init__(self, id: int, speed: float | None = None, color: str | None = None, visibility_radius: float | None = None, orientation: tuple[float , float , float] | None = None, obstructed_visibility: bool = False, multiplicity_detection: bool = False, rigid_movement: bool = False, coordinates: Coordinates = None):
+    def __init__(self, id: int, speed: float = 1.0, color: str | None = None, visibility_radius: float | None = None, orientation: tuple[float , float , float] | None = None, obstructed_visibility: bool = False, multiplicity_detection: bool = False, rigid_movement: bool = False, coordinates: Coordinates = None):
         self.speed = speed
         self.color = color
         self.visibility_radius = visibility_radius
@@ -13,7 +14,8 @@ class Robot:
         self.start_time = None
         self.end_time = None
         self.current_time = None
-        self.state = RobotState.SLEEP
+        self.state = RobotState.WAIT
+        self.start_position = coordinates
         self.calculated_position = None
         self.number_of_activations = 0
         self.travelled_distance = 0
@@ -22,20 +24,48 @@ class Robot:
         self.id = id
         
     def look(self, snapshot: dict[Id, tuple[Coordinates,State]]) -> None:
+        print(f"Robot {self.id}: Look state")
         self.snapshot = {key: self.convert_coordinate(value) for key, value in snapshot.items() if self.robot_is_visible(value[0])}
-        self.compute(self.midpoint)
         
+        self.calculated_position = self.compute(self.midpoint)
+        print(f"Robot {self.id}: Compute state - Computed Position: {self.calculated_position}")
+
     
     def compute(self, algo) -> Coordinates:
         coord = algo()
         return coord
     
-    def move(self) -> None:
-        pass
+    def move(self, start_time: float) -> None:
+        print(f"Robot {self.id}: Move state - Start time {start_time}")
+
+        self.start_time = start_time
+    
+    def wait(self, end_time: float) -> None:
+        print(f"Robot {self.id}: Wait state - Time {end_time}")
+
+        self.end_time = end_time
+        self.travelled_distance += math.dist(self.start_position, self.calculated_position)
+        print(f"Robot {self.id}: Travelled a total of {self.travelled_distance} units")
+
 
     def get_position(self, time: float) -> Coordinates:
-        pass
-    
+        self.current_time = time
+        if self.state != RobotState.MOVE:
+            return self.coordinates
+        
+        distance = math.dist(self.start_position, self.calculated_position)
+        distance_covered = self.speed * time
+        
+        if distance_covered > distance:
+            return self.end_position
+        else:
+            factor = distance_covered / distance
+            return self.interpolate(self.start_position, self.calculated_position, factor)
+        
+    def interpolate(self, start: Coordinates, end: Coordinates, t: float) -> Coordinates:
+            return (start[0] + t * (end[0] - start[0]),
+            start[1] + t * (end[1] - start[1]))
+            
     def convert_coordinate(self, coord: Coordinates) -> Coordinates:
         return coord
 
