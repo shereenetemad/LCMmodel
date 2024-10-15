@@ -1,5 +1,5 @@
 from enums import RobotState
-from type_defs import Coordinates
+from type_defs import *
 
 class Robot:
     def __init__(self, id: int, speed: float | None = None, color: str | None = None, visibility_radius: float | None = None, orientation: tuple[float , float , float] | None = None, obstructed_visibility: bool = False, multiplicity_detection: bool = False, rigid_movement: bool = False, coordinates: Coordinates = None):
@@ -21,7 +21,7 @@ class Robot:
         self.coordinates = coordinates
         self.id = id
         
-    def look(self, snapshot: dict[int, tuple[Coordinates,str]]) -> None:
+    def look(self, snapshot: dict[Id, tuple[Coordinates,State]]) -> None:
         self.snapshot = {key: self.convert_coordinate(value) for key, value in snapshot.items() if self.robot_is_visible(value[0])}
         self.compute(self.midpoint)
         
