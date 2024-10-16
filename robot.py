@@ -23,9 +23,9 @@ class Robot:
         self.coordinates = coordinates
         self.id = id
         
-    def look(self, snapshot: dict[Id, tuple[Coordinates,State]]) -> None:
-        print(f"Robot {self.id}: Look state")
+    def look(self, snapshot: dict[Id, tuple[Coordinates,State]], time: float) -> None:
         self.snapshot = {key: self.convert_coordinate(value) for key, value in snapshot.items() if self.robot_is_visible(value[0])}
+        print(f"Robot {self.id}: Look state - Time {time} -- Snapshot {self.snapshot}")
         
         self.calculated_position = self.compute(self.midpoint)
         print(f"Robot {self.id}: Compute state - Computed Position: {self.calculated_position}")

@@ -20,7 +20,6 @@ class Scheduler:
         snapshot = {}
         for robot in self.robots:
             snapshot[robot.id] = (robot.get_position(time), robot.color)
-
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
@@ -40,7 +39,7 @@ class Scheduler:
         
         if next_state == RobotState.LOOK:
             robot.state = RobotState.LOOK
-            robot.look(self.get_snapshot(time))
+            robot.look(self.get_snapshot(time), time)
         elif next_state == RobotState.MOVE:
             robot.state = RobotState.MOVE
             robot.move(time)
@@ -68,6 +67,7 @@ class Scheduler:
         
         # Generate a random number
         self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
+        print(f"Seed used: {self.generator_seed}")
 
         # Generate time intervals for n events
         self.generator = np.random.default_rng(seed = self.generator_seed)
