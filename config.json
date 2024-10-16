@@ -8,7 +8,7 @@
   "scheduler_type": "async",
   "probability_distribution": "gaussian",
   "visibility_radius": 100,
-  "robot_orientations": [0, 0, 0],
+  "robot_orientations": null,
   "multiplicity_detection": false,
   "robot_colors": "#000000",
   "obstructed_visibility": false,
