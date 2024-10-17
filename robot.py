@@ -57,10 +57,12 @@ class Robot:
         distance_covered = self.speed * time
         
         if distance_covered > distance:
-            return self.end_position
+            self.coordinates = self.calculated_position
         else:
             factor = distance_covered / distance
-            return self.interpolate(self.start_position, self.calculated_position, factor)
+            self.coordinates = self.interpolate(self.start_position, self.calculated_position, factor)
+            
+        return self.coordinates
         
     def interpolate(self, start: Coordinates, end: Coordinates, t: float) -> Coordinates:
             return (start[0] + t * (end[0] - start[0]),
