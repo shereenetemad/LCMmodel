@@ -2,9 +2,19 @@
 
 A simulator for Look Compute Move robots in the Asynchronous System
 
+## Installing required packages
+
+`pip install -r requirements.txt`
+
 ## Running the Simulator
 
-`python run.py config.json`
+### Windows
+
+`python run.py`
+
+### MacOS / Linux
+
+`python3 run.py`
 
 The configuration takes the following variables.
 
