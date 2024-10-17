@@ -21,7 +21,7 @@ class Scheduler:
     def get_snapshot(self, time: float) -> dict[int, tuple[Coordinates,str]]:
         snapshot = {}
         for robot in self.robots:
-            snapshot[robot.id] = (robot.get_position(time), robot.color)
+            snapshot[robot.id] = (robot.get_position(time), robot.state)
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
