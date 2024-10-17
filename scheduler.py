@@ -3,6 +3,8 @@ from type_defs import *
 from robot import Robot
 import numpy as np
 import heapq
+import math
+
 
 class Scheduler:
     
@@ -23,7 +25,14 @@ class Scheduler:
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
-        new_event_time = current_event[2] + self.generator.exponential(scale=1/ self.lambda_rate)
+        
+        new_event_time = 0.0
+        if current_event[1] == RobotState.MOVE:
+            robot = self.robots[current_event[0]]
+            new_event_time = current_event[2] + (math.dist(robot.calculated_position, robot.start_position) / robot.speed)
+        else:
+            new_event_time = current_event[2] + self.generator.exponential(scale=1/ self.lambda_rate)
+
         new_event = (new_event_time, (current_event[0], current_event[1].next_state(), new_event_time))
         
         heapq.heappush(self.priority_queue, new_event)
@@ -31,7 +40,6 @@ class Scheduler:
     def handle_event(self) -> None:
         
         next_event = heapq.heappop(self.priority_queue)[1]
-        self.generate_event(next_event)
         
         next_state = next_event[1]
         robot = self.robots[next_event[0]]
@@ -46,6 +54,9 @@ class Scheduler:
         elif next_state == RobotState.WAIT:
             robot.state = RobotState.WAIT
             robot.wait(time)
+            
+        self.generate_event(next_event)
+        
 
     def initialize_queue(self) -> None:
         # Set the lambda parameter (average rate of occurrences)
