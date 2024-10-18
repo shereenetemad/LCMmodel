@@ -43,7 +43,7 @@ class Robot:
         }
         print(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
-        self.calculated_position = self.compute(self.midpoint)
+        self.calculated_position = self.compute(self.center)
         pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
         print(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
 
@@ -108,6 +108,9 @@ class Robot:
         y = y / len(self.snapshot)
 
         return (x, y)
+
+    def center(self) -> Coordinates:
+        return (0, 0)
 
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
