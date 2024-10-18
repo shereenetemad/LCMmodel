@@ -45,6 +45,8 @@ class Robot:
 
         self.end_time = end_time
         self.travelled_distance += math.dist(self.start_position, self.calculated_position)
+        self.coordinates = self.calculated_position
+
         print(f"Robot {self.id}: Travelled a total of {self.travelled_distance} units")
 
 
@@ -85,3 +87,5 @@ class Robot:
           
         return (x, y) 
         
+    def __str__(self):
+        return f"Robot {self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
