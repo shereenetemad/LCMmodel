@@ -53,7 +53,8 @@ class Scheduler:
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
         new_event_time = 0.0
-        if current_event[1] == RobotState.MOVE:
+
+        if self.rigid_movement == True and current_event[1] == RobotState.MOVE:
             robot = self.robots[current_event[0]]
             new_event_time = current_event[2] + (
                 math.dist(robot.calculated_position, robot.start_position) / robot.speed
