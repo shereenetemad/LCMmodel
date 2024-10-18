@@ -14,8 +14,6 @@ logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format
 with open("config.json", "r") as file:
     config = json.load(file)
 
-print(config)
-
 if isinstance(config["initial_positions"], list) and config["number_of_robots"] != len(
     config["initial_positions"]
 ):
@@ -46,11 +44,11 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
 
 
 # COMMENT THESE OUT
-num_of_robots = config["number_of_robots"]
-initial_positions = config["initial_positions"]
+# num_of_robots = config["number_of_robots"]
+# initial_positions = config["initial_positions"]
 
-# num_of_robots = 5
-# initial_positions = np.random.uniform(low=-25, high=25, size=(5, 2))
+num_of_robots = 5
+initial_positions = np.random.uniform(low=-25, high=25, size=(5, 2))
 
 scheduler = Scheduler(
     num_of_robots=num_of_robots,
@@ -59,8 +57,10 @@ scheduler = Scheduler(
     rigid_movement=config["rigid_movement"],
 )
 
-for i in range(30):
-    scheduler.handle_event()
+while True:
+    ok = scheduler.handle_event()
+    if ok == False:
+        break
 
 
 robot_data = scheduler.snapshot_history
@@ -106,7 +106,7 @@ ani = FuncAnimation(
     init_func=init,
     blit=True,
     interval=500,
-    repeat=False,
+    repeat=True,
 )
 
 plt.legend()

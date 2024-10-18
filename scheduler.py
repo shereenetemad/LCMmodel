@@ -27,6 +27,7 @@ class Scheduler:
         probability_distribution: str = DistributionType.GAUSSIAN,
         scheduler_type: str = SchedulerType.ASYNC,
     ):
+        self.terminate = False
         self.rigid_movement = rigid_movement
         self.multiplicity_detection = multiplicity_detection
         self.probability_distribution = probability_distribution
@@ -52,6 +53,8 @@ class Scheduler:
             snapshot[robot.id] = (robot.get_position(time), robot.state)
 
         self.snapshot_history.append((time, snapshot))
+        if self.unchanged_history(15) == True:
+            self.terminate = True
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
@@ -74,7 +77,10 @@ class Scheduler:
 
         heapq.heappush(self.priority_queue, new_event)
 
-    def handle_event(self) -> None:
+    def handle_event(self) -> bool:
+        if self.terminate == True:
+            return False
+
         next_event = heapq.heappop(self.priority_queue)[1]
 
         next_state = next_event[1]
@@ -92,6 +98,7 @@ class Scheduler:
             robot.wait(time)
 
         self.generate_event(next_event)
+        return True
 
     def initialize_queue(self) -> None:
         # Set the lambda parameter (average rate of occurrences)
@@ -130,3 +137,24 @@ class Scheduler:
             self.priority_queue.append((time, item))
 
         heapq.heapify(self.priority_queue)
+
+    def unchanged_history(self, max_history) -> bool:
+        length = len(self.snapshot_history)
+        if length <= 1:
+            return False
+
+        count = max_history
+        for i in range(length - 1, 0, -1):
+            if count == 0:
+                return True
+
+            for robot_id in range(len(self.robots)):
+                if (
+                    self.snapshot_history[i][1][robot_id][0]
+                    != self.snapshot_history[i - 1][1][robot_id][0]
+                ):
+                    return False
+
+            count -= 1
+
+        return count <= 0
