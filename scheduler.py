@@ -108,7 +108,6 @@ class Scheduler:
 
         # Generate a random number
         self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
-        # self.generator_seed = 4041686808 # Replace this with specific seed if debugging
         print(f"Seed used: {self.generator_seed}")
 
         # Generate time intervals for n events
@@ -116,7 +115,7 @@ class Scheduler:
         num_of_events = len(self.robots)
         time_intervals = self.generator.exponential(
             scale=1 / self.lambda_rate, size=num_of_events
-        ).astype(np.float16)
+        )
 
         print("Time intervals between events:", time_intervals)
 

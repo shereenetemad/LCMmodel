@@ -30,7 +30,7 @@ class Robot:
         self.start_position = coordinates
         self.calculated_position = None
         self.number_of_activations = 0
-        self.travelled_distance = 0
+        self.travelled_distance = 0.0
         self.snapshot = None
         self.coordinates = coordinates
         self.id = id
@@ -43,7 +43,7 @@ class Robot:
         }
         print(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
-        self.calculated_position = self.compute(self.center)
+        self.calculated_position = self.compute(self.midpoint)
         pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
         print(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
 
@@ -56,22 +56,25 @@ class Robot:
 
         self.start_time = start_time
 
-    def wait(self, end_time: float) -> None:
-        print(f"[{end_time:.6f}] {{R{self.id}}} WAIT")
+    def wait(self, time: float) -> None:
+        self.end_time = time
 
-        self.end_time = end_time
-        self.travelled_distance += math.dist(
-            self.start_position, self.calculated_position
-        )
-        self.coordinates = self.calculated_position
+        self.coordinates = self.get_position(time)
+        self.travelled_distance += math.dist(self.start_position, self.coordinates)
 
+        self.start_position = self.coordinates
         print(
-            f"[{end_time:.6f}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
+            f"[{time:.6f}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
         )
+
+        self.calculated_position = None
+        self.start_time = None
+        self.end_time = None
 
     def get_position(self, time: float) -> Coordinates:
         self.current_time = time
-        if self.state != RobotState.MOVE:
+
+        if self.calculated_position == None:
             return self.coordinates
 
         distance = math.dist(self.start_position, self.calculated_position)
