@@ -43,12 +43,11 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
     )
 
 
-# COMMENT THESE OUT
-# num_of_robots = config["number_of_robots"]
-# initial_positions = config["initial_positions"]
+num_of_robots = config["number_of_robots"]
+initial_positions = config["initial_positions"]
 
-num_of_robots = 5
-initial_positions = np.random.uniform(low=-25, high=25, size=(5, 2))
+# num_of_robots = 10
+# initial_positions = np.random.uniform(low=-25, high=25, size=(num_of_robots, 2))
 
 scheduler = Scheduler(
     num_of_robots=num_of_robots,
@@ -105,8 +104,8 @@ ani = FuncAnimation(
     frames=robot_data,
     init_func=init,
     blit=True,
-    interval=500,
-    repeat=True,
+    interval=200,
+    repeat=False,
 )
 
 plt.legend()
