@@ -24,6 +24,18 @@ class Scheduler:
         probability_distribution: str = DistributionType.GAUSSIAN,
         scheduler_type: str = SchedulerType.ASYNC,
     ):
+        self.rigid_movement = rigid_movement
+        self.multiplicity_detection = multiplicity_detection
+        self.probability_distribution = probability_distribution
+        self.scheduler_type = scheduler_type
+        self.robot_speeds = robot_speeds
+        self.visibility_radius = visibility_radius
+        self.robot_orientations = robot_orientations
+        self.robot_colors = robot_colors
+        self.obstructed_visibility = obstructed_visibility
+        self.snapshot_history: list[tuple[Time, dict[int, tuple[Coordinates, str]]]] = (
+            []
+        )
         self.robots: list[Robot] = []
         for i in range(num_of_robots):
             new_robot = Robot(id=i, coordinates=tuple(initial_positions[i]))
@@ -35,6 +47,8 @@ class Scheduler:
         snapshot = {}
         for robot in self.robots:
             snapshot[robot.id] = (robot.get_position(time), robot.state)
+
+        self.snapshot_history.append((time, snapshot))
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
@@ -93,6 +107,7 @@ class Scheduler:
 
         # Generate a random number
         self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
+        # self.generator_seed = 4041686808 # Replace this with specific seed if debugging
         print(f"Seed used: {self.generator_seed}")
 
         # Generate time intervals for n events
@@ -100,7 +115,7 @@ class Scheduler:
         num_of_events = len(self.robots)
         time_intervals = self.generator.exponential(
             scale=1 / self.lambda_rate, size=num_of_events
-        )
+        ).astype(np.float16)
 
         print("Time intervals between events:", time_intervals)
 
