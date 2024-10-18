@@ -1,4 +1,4 @@
-Coordinates = tuple[float,float]
+Coordinates = tuple[float, float]
 Priority = int
 State = str
 Time = float
