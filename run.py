@@ -5,6 +5,10 @@ from scheduler import Scheduler
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import logging
+
+
+logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format="")
 
 
 with open("config.json", "r") as file:

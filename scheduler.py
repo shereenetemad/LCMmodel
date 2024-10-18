@@ -4,6 +4,9 @@ from robot import Robot
 import numpy as np
 import heapq
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Scheduler:
@@ -100,7 +103,7 @@ class Scheduler:
         poisson_numbers = generator.poisson(lambda_value, num_samples)
 
         # Display the generated numbers
-        print(poisson_numbers)
+        logger.info(poisson_numbers)
 
     def initialize_queue_exponential(self) -> None:
         # Set the rate parameter (lambda)
@@ -108,7 +111,7 @@ class Scheduler:
 
         # Generate a random number
         self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
-        print(f"Seed used: {self.generator_seed}")
+        logger.info(f"Seed used: {self.generator_seed}")
 
         # Generate time intervals for n events
         self.generator = np.random.default_rng(seed=self.generator_seed)
@@ -117,7 +120,7 @@ class Scheduler:
             scale=1 / self.lambda_rate, size=num_of_events
         )
 
-        print("Time intervals between events:", time_intervals)
+        logger.info(f"Time intervals between events: {time_intervals}")
 
         self.priority_queue: list[tuple[Priority, tuple[Id, RobotState, Time]]] = []
 

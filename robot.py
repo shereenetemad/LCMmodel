@@ -1,6 +1,9 @@
 from enums import RobotState
 from type_defs import *
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Robot:
@@ -41,18 +44,18 @@ class Robot:
             for key, value in snapshot.items()
             if self.robot_is_visible(value[0])
         }
-        print(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
+        logger.info(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
         self.calculated_position = self.compute(self.midpoint)
         pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
-        print(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+        logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
 
     def compute(self, algo) -> Coordinates:
         coord = algo()
         return coord
 
     def move(self, start_time: float) -> None:
-        print(f"[{start_time:.6f}] {{R{self.id}}} MOVE")
+        logger.info(f"[{start_time:.6f}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
 
@@ -63,7 +66,7 @@ class Robot:
         self.travelled_distance += math.dist(self.start_position, self.coordinates)
 
         self.start_position = self.coordinates
-        print(
+        logger.info(
             f"[{time:.6f}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
         )
 
