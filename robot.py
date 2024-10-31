@@ -34,7 +34,7 @@ class Robot:
         self.calculated_position = None
         self.number_of_activations = 0
         self.travelled_distance = 0.0
-        self.snapshot = None
+        self.snapshot: dict[Id, tuple[Coordinates, State]] = None
         self.coordinates = coordinates
         self.id = id
 
@@ -117,19 +117,23 @@ class Robot:
 
         return (x, y)
 
-    def _smallest_enclosing_circle(self) -> Circle:
+    def _smallest_enclosing_circle(self) -> Coordinates:
         num_robots = len(self.snapshot)
-        sec: Circle | None = None
+        destination: Coordinates | None = None
         if num_robots == 0:
-            sec = ((0, 0), 0)
+            destination = (0, 0)
         if num_robots == 1:
-            sec = (self.snapshot[0][0], 0)
+            destination = self.snapshot[0][0]
         else:
-            sec = self._sec(num_robots)
-        # TODO: return random point along circumference
-        return sec
+            sec: Circle = self._sec(num_robots)
+            destination = self._closest_point_on_circle(sec, self.coordinates)
+
+        return destination
 
     def _sec(self, num_robots: int) -> Circle:
+        """Returns smallest enclosing circle given number of robots in the form of
+        (Center, Radius)"""
+
         sec: Circle = ((0, 0), 10**18)
         for i in range(num_robots):
             for j in range(i + 1, num_robots):
@@ -154,8 +158,30 @@ class Robot:
                         sec = circle
         return sec
 
-    # Returns False if at least one point does not lie within given circle
+    def _closest_point_on_circle(
+        self, circle: Circle, point: Coordinates
+    ) -> Coordinates:
+
+        # Vector from the center of the circle to the point
+        center: Coordinates = circle[0]
+        radius: float = circle[1]
+        vx, vy = point[0] - center[0], point[1] - center[1]
+
+        # Distance from the center to the point
+        d = self._distance(center, point)
+
+        # Scaling factor to project the point onto the circle
+        scale = radius / d
+
+        # Closest point on the circle
+        cx = center[0] + vx * scale
+        cy = center[1] + vy * scale
+
+        return (cx, cy)
+
     def _valid_circle(self, circle: Circle) -> bool:
+        """Returns False if at least one point does not lie within given circle"""
+
         # Iterate through all coordinates
         for _, coord in self.snapshot.items():
             # If point does not lie inside of the given circle; i.e.: if
@@ -164,16 +190,18 @@ class Robot:
                 return False
         return True
 
-    # Returns circle intersecting two points
     def _circle_from_two(self, a: Coordinates, b: Coordinates) -> Circle:
+        """Returns circle intersecting two points"""
+
         # Midpoint between a and b
         center = ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0)
         return (center, self._distance(a, b) / 2.0)
 
-    # Returns circle intersecting three points
     def _circle_from_three(
         self, a: Coordinates, b: Coordinates, c: Coordinates
     ) -> Circle:
+        """Returns circle intersecting three points"""
+
         center = self._circle_center(b[0] - a[0], b[1] - a[1], c[0] - a[0], c[1] - a[1])
         center[0] += a[0]
         center[1] += a[1]
@@ -184,8 +212,8 @@ class Robot:
         c = cx * cx + cy * cy
         d = bx * cy - by * cx
         if d == 0:
-            return [0, 0]
-        return [(cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d)]
+            return (0, 0)
+        return ((cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
         return math.sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2))
