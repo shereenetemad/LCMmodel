@@ -46,9 +46,6 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
 num_of_robots = config["number_of_robots"]
 initial_positions = config["initial_positions"]
 
-# num_of_robots = 10
-# initial_positions = np.random.uniform(low=-25, high=25, size=(num_of_robots, 2))
-
 scheduler = Scheduler(
     num_of_robots=num_of_robots,
     initial_positions=initial_positions,
@@ -60,7 +57,6 @@ while True:
     ok = scheduler.handle_event()
     if ok == False:
         break
-
 
 robot_data = scheduler.snapshot_history
 robot_ids = list(robot_data[0][1].keys())
@@ -89,7 +85,7 @@ def init():
 def update(frame):
     """Update the robot positions and time for each frame."""
     time, positions = frame
-    for robot_id, (pos, state) in positions.items():
+    for robot_id, (pos, _) in positions.items():
         x, y = pos
         robot_plots[robot_id].set_data([x], [y])
 

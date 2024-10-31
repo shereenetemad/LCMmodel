@@ -40,17 +40,19 @@ class Robot:
 
     def look(self, snapshot: dict[Id, tuple[Coordinates, State]], time: float) -> None:
         self.snapshot = {
-            key: self.convert_coordinate(value)
+            key: self._convert_coordinate(value)
             for key, value in snapshot.items()
-            if self.robot_is_visible(value[0])
+            if self._robot_is_visible(value[0])
         }
         logger.info(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
-        self.calculated_position = self.compute(self.midpoint)
+        self.calculated_position = self._compute(self._midpoint)
+        sec = self._smallest_enclosing_circle()
         pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
         logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+        logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
 
-    def compute(self, algo) -> Coordinates:
+    def _compute(self, algo) -> Coordinates:
         coord = algo()
         return coord
 
@@ -87,24 +89,24 @@ class Robot:
             self.coordinates = self.calculated_position
         else:
             factor = distance_covered / distance
-            self.coordinates = self.interpolate(
+            self.coordinates = self._interpolate(
                 self.start_position, self.calculated_position, factor
             )
 
         return self.coordinates
 
-    def interpolate(
+    def _interpolate(
         self, start: Coordinates, end: Coordinates, t: float
     ) -> Coordinates:
         return (start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1]))
 
-    def convert_coordinate(self, coord: Coordinates) -> Coordinates:
+    def _convert_coordinate(self, coord: Coordinates) -> Coordinates:
         return coord
 
-    def robot_is_visible(self, coord: Coordinates):
+    def _robot_is_visible(self, coord: Coordinates):
         return True
 
-    def midpoint(self) -> Coordinates:
+    def _midpoint(self) -> Coordinates:
         x = y = 0
         for _, value in self.snapshot.items():
             x += value[0][0]
@@ -115,8 +117,83 @@ class Robot:
 
         return (x, y)
 
-    def center(self) -> Coordinates:
-        return (0, 0)
+    def _smallest_enclosing_circle(self) -> Circle:
+        num_robots = len(self.snapshot)
+        sec: Circle | None = None
+        if num_robots == 0:
+            sec = ((0, 0), 0)
+        if num_robots == 1:
+            sec = (self.snapshot[0][0], 0)
+        else:
+            sec = self._sec(num_robots)
+        # TODO: return random point along circumference
+        return sec
+
+    def _sec(self, num_robots: int) -> Circle:
+        sec: Circle = ((0, 0), 10**18)
+        for i in range(num_robots):
+            for j in range(i + 1, num_robots):
+                a = self.snapshot[i][0]
+                b = self.snapshot[j][0]
+                circle = self._circle_from_two(a, b)
+                radius1 = circle[1]
+                radius2 = sec[1]
+                if radius1 < radius2 and self._valid_circle(circle):
+                    sec = circle
+
+        for i in range(num_robots):
+            for j in range(i + 1, num_robots):
+                for k in range(j + 1, num_robots):
+                    a = self.snapshot[i][0]
+                    b = self.snapshot[j][0]
+                    c = self.snapshot[k][0]
+                    circle = self._circle_from_three(a, b, c)
+                    radius1 = circle[1]
+                    radius2 = sec[1]
+                    if radius1 < radius2 and self._valid_circle(circle):
+                        sec = circle
+        return sec
+
+    # Returns False if at least one point does not lie within given circle
+    def _valid_circle(self, circle: Circle) -> bool:
+        # Iterate through all coordinates
+        for _, coord in self.snapshot.items():
+            # If point does not lie inside of the given circle; i.e.: if
+            # distance between the center coord and point is more than radius
+            if self._distance(circle[0], coord[0]) > circle[1]:
+                return False
+        return True
+
+    # Checks whether point lies inside of the given circle
+    def _in_circle(self, circle: Circle, point: Coordinates) -> bool:
+        # If distance between the center coord and point is less than the circle radius
+        return self._distance(circle[0], point) <= circle[1]
+
+    # Returns circle intersecting two points
+    def _circle_from_two(self, a: Coordinates, b: Coordinates) -> Circle:
+        # Midpoint between a and b
+        center = ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0)
+        return (center, self._distance(a, b) / 2.0)
+
+    # Returns circle intersecting three points
+    def _circle_from_three(
+        self, a: Coordinates, b: Coordinates, c: Coordinates
+    ) -> Circle:
+        center = self._circle_center(b[0] - a[0], b[1] - a[1], c[0] - a[0], c[1] - a[1])
+        center[0] += a[0]
+        center[1] += a[1]
+        return (center, self._distance(center, a))
+
+    def _circle_center(self, bx: float, by: float, cx: float, cy: float) -> Coordinates:
+        b = bx * bx + by * by
+        c = cx * cx + cy * cy
+        d = bx * cy - by * cx
+        if d == 0:
+            return [0, 0]
+        return [(cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d)]
+
+    def _distance(self, a: Coordinates, b: Coordinates) -> float:
+        return math.sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2))
 
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"

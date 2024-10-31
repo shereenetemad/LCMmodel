@@ -1,8 +1,9 @@
 {
-  "number_of_robots": 2,
+  "number_of_robots": 3,
   "initial_positions": [
-    [-5.0, 5.0],
-    [0.0, 0.0]
+    [0.0, 0.0],
+    [0.0, 1.0],
+    [1.0, 0.0]
   ],
   "robot_speeds": 1.0,
   "scheduler_type": "async",

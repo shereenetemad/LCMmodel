@@ -6,3 +6,4 @@ Id = int
 Translation = float
 Rotation = float
 Reflection = float
+Circle = tuple[Coordinates, float]
