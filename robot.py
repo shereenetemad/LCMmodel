@@ -164,11 +164,6 @@ class Robot:
                 return False
         return True
 
-    # Checks whether point lies inside of the given circle
-    def _in_circle(self, circle: Circle, point: Coordinates) -> bool:
-        # If distance between the center coord and point is less than the circle radius
-        return self._distance(circle[0], point) <= circle[1]
-
     # Returns circle intersecting two points
     def _circle_from_two(self, a: Coordinates, b: Coordinates) -> Circle:
         # Midpoint between a and b
