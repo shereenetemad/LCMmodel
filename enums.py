@@ -1,10 +1,10 @@
 from enum import Enum
 
 
-class RobotState(Enum):
-    LOOK = 0
-    MOVE = 1
-    WAIT = 2
+class RobotState(str, Enum):
+    LOOK = "LOOK"
+    MOVE = "MOVE"
+    WAIT = "WAIT"
 
     def next_state(self):
         if self == RobotState.LOOK:

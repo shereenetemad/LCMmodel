@@ -47,10 +47,10 @@ class Robot:
         logger.info(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
         self.calculated_position = self._compute(self._midpoint)
-        sec = self._smallest_enclosing_circle()
-        pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
-        logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
-        logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
+        # sec = self._smallest_enclosing_circle()
+        # pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
+        # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+        # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
 
     def _compute(self, algo) -> Coordinates:
         coord = algo()
