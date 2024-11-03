@@ -14,6 +14,24 @@ let window_width = window.innerWidth;
 resizeCanvas();
 let robots = {};
 
+const eventSource = new EventSource("/api/data");
+
+eventSource.onmessage = function (event) {
+  if (event.data === "END") {
+    console.log("Simulation complete. Closing connection.");
+    eventSource.close();
+  } else {
+    const data = JSON.parse(event.data);
+    clearCanvas();
+    drawSnapshot(data);
+  }
+};
+
+eventSource.onerror = function (event) {
+  console.log("Error occured");
+  eventSource.close();
+};
+
 class Robot {
   constructor(x, y, id, color, speed) {
     this.x = x;
@@ -87,32 +105,11 @@ function resizeCanvas() {
   ctx.translate(canvas.width / 2, canvas.height / 2);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  fetch("http://127.0.0.1:8080/api/data") // Ensure URL matches backend's route and port
-    .then((response) => response.json())
-    .then((data) => {
-      console.log("Snapshots");
-      console.log(data.snapshots);
-      let i = 0;
-      let intervalID = setInterval(() => {
-        if (i < data.snapshots.length) {
-          clearCanvas();
-          drawSnapshot(data.snapshots[i]);
-          i++;
-        } else {
-          clearInterval(intervalID);
-        }
-      }, 500);
-    })
-    .catch((error) => console.error("Error fetching data:", error));
-});
-
 function drawSnapshot(snapshot) {
   let time = snapshot[0];
   updateTimeElement(time);
   let robotsHistory = snapshot[1];
   for (let id in robotsHistory) {
-    console.log(id);
     if (robots[id] === undefined) {
       robots[id] = new Robot(undefined, undefined, id, getRandomColor(), 1);
     }

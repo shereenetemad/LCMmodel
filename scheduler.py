@@ -79,8 +79,9 @@ class Scheduler:
 
     def handle_event(self) -> bool:
         if self.terminate == True:
-            return False
+            return -1
 
+        exit_code = None
         next_event = heapq.heappop(self.priority_queue)[1]
 
         next_state = next_event[1]
@@ -90,15 +91,18 @@ class Scheduler:
         if next_state == RobotState.LOOK:
             robot.state = RobotState.LOOK
             robot.look(self.get_snapshot(time), time)
+            exit_code = 1
         elif next_state == RobotState.MOVE:
             robot.state = RobotState.MOVE
             robot.move(time)
+            exit_code = 2
         elif next_state == RobotState.WAIT:
             robot.state = RobotState.WAIT
             robot.wait(time)
+            exit_code = 3
 
         self.generate_event(next_event)
-        return True
+        return exit_code
 
     def initialize_queue(self) -> None:
         # Set the lambda parameter (average rate of occurrences)

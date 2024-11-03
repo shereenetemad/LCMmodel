@@ -56,72 +56,36 @@ scheduler = Scheduler(
     rigid_movement=config["rigid_movement"],
 )
 
-while True:
-    ok = scheduler.handle_event()
-    if ok == False:
-        break
 
-robot_data = scheduler.snapshot_history
-robot_ids = list(robot_data[0][1].keys())
-
-# fig, ax = plt.subplots()
-# ax.set_xlim(-30, 30)
-# ax.set_ylim(-30, 30)
-
-# # Plot for each robot (dots)
-# robot_plots = {}
-# for robot_id in robot_ids:
-#     (robot_plots[robot_id],) = ax.plot([], [], "o", label=f"Robot {robot_id}")
-
-# # Time text display
-# time_text = ax.text(0.02, 0.95, "", transform=ax.transAxes)
-
-
-# def init():
-#     """Initialize the plots."""
-#     for plot in robot_plots.values():
-#         plot.set_data([], [])
-#     time_text.set_text("")
-#     return list(robot_plots.values()) + [time_text]
-
-
-# def update(frame):
-#     """Update the robot positions and time for each frame."""
-#     time, positions = frame
-#     for robot_id, (pos, _) in positions.items():
-#         x, y = pos
-#         robot_plots[robot_id].set_data([x], [y])
-
-#     time_text.set_text(f"Time: {time:.4f}")
-#     return list(robot_plots.values()) + [time_text]
-
-
-# # Create animation
-# ani = FuncAnimation(
-#     fig,
-#     update,
-#     frames=robot_data,
-#     init_func=init,
-#     blit=True,
-#     interval=200,
-#     repeat=False,
-# )
-
-# plt.legend()
-# plt.show()
-
-
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, Response, send_from_directory
 import webbrowser
 import threading
+import json
 
 app = Flask(__name__, static_folder="static")
 
 
 @app.route("/api/data", methods=["GET"])
 def get_data():
-    data = {"snapshots": scheduler.snapshot_history}
-    return jsonify(data)
+    scheduler = Scheduler(
+        num_of_robots=num_of_robots,
+        initial_positions=initial_positions,
+        robot_speeds=config["robot_speeds"],
+        rigid_movement=config["rigid_movement"],
+    )
+
+    def run_simulation():
+        while True:
+            exit_code = scheduler.handle_event()
+
+            if exit_code == 1:
+                yield f"data:{json.dumps(scheduler.snapshot_history[-1])}\n\n"
+
+            if exit_code < 0:
+                yield "data:END\n\n"
+                break
+
+    return Response(run_simulation(), mimetype="text/event-stream")
 
 
 @app.route("/")
@@ -135,4 +99,4 @@ def open_browser():
 
 if __name__ == "__main__":
     threading.Timer(1, open_browser).start()  # Delay to give server time to start
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="127.0.0.1", port=8080, debug=True, use_reloader=False)
