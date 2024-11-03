@@ -1,36 +1,41 @@
 // @ts-nocheck
 
-window.addEventListener("resize", resizeCanvas);
-
-// Constants
-const ROBOT_SIZE = 6;
-
-let canvas = document.getElementById("canvas");
-let ctx = canvas.getContext("2d");
-
-let window_height = window.innerHeight;
-let window_width = window.innerWidth;
-
-resizeCanvas();
-let robots = {};
-
-const eventSource = new EventSource("/api/data");
-
-eventSource.onmessage = function (event) {
-  if (event.data === "END") {
-    console.log("Simulation complete. Closing connection.");
-    eventSource.close();
-  } else {
-    const data = JSON.parse(event.data);
-    clearCanvas();
-    drawSnapshot(data);
+class Queue {
+  constructor() {
+    this.head = undefined;
+    this.tail = undefined;
   }
-};
 
-eventSource.onerror = function (event) {
-  console.log("Error occured");
-  eventSource.close();
-};
+  enqueue(value) {
+    const newNode = { value, next: undefined };
+
+    if (this.tail) {
+      this.tail.next = newNode;
+    } else {
+      this.head = newNode;
+    }
+    this.tail = newNode;
+  }
+
+  dequeue() {
+    if (!this.head) {
+      return undefined;
+    }
+
+    const value = this.head.value;
+    this.head = this.head.next;
+
+    if (!this.head) {
+      this.tail = undefined;
+    }
+
+    return value;
+  }
+
+  peek() {
+    return this.head ? this.head.value : undefined;
+  }
+}
 
 class Robot {
   constructor(x, y, id, color, speed) {
@@ -40,8 +45,6 @@ class Robot {
     this.color = color;
     this.speed = speed;
     this.radius = ROBOT_SIZE;
-    this.dx = 1 * this.speed;
-    this.dy = 1 * this.speed;
   }
 
   draw(ctx) {
@@ -76,6 +79,55 @@ class Robot {
     this.x += this.dx;
     this.y += this.dy;
   }
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+// Constants
+const ROBOT_SIZE = 6;
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let window_height = window.innerHeight;
+let window_width = window.innerWidth;
+
+resizeCanvas();
+let robots = {};
+let snapshotQueue = new Queue();
+let intervalId = undefined;
+
+const eventSource = new EventSource("/api/data");
+
+eventSource.onmessage = function (event) {
+  if (event.data === "END") {
+    console.log("Simulation complete. Closing connection.");
+
+    eventSource.close();
+  } else {
+    if (!intervalId) {
+      startDrawingInterval();
+    }
+    const data = JSON.parse(event.data);
+    snapshotQueue.enqueue(data);
+  }
+};
+
+eventSource.onerror = function (event) {
+  console.log("Error occured");
+  eventSource.close();
+};
+
+function startDrawingInterval() {
+  intervalId = setInterval(() => {
+    const snapshot = snapshotQueue.dequeue();
+    if (!snapshot) {
+      clearInterval(intervalId);
+      return;
+    }
+    clearCanvas();
+    drawSnapshot(snapshot);
+  }, 17);
 }
 
 function clearCanvas() {
