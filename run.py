@@ -43,8 +43,11 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
     )
 
 
-num_of_robots = config["number_of_robots"]
-initial_positions = config["initial_positions"]
+# num_of_robots = config["number_of_robots"]
+# initial_positions = config["initial_positions"]
+
+num_of_robots = 10
+initial_positions = np.random.uniform(low=-25, high=25, size=(num_of_robots, 2))
 
 scheduler = Scheduler(
     num_of_robots=num_of_robots,
@@ -109,6 +112,8 @@ robot_ids = list(robot_data[0][1].keys())
 
 
 from flask import Flask, jsonify, request, send_from_directory
+import webbrowser
+import threading
 
 app = Flask(__name__, static_folder="static")
 
@@ -124,5 +129,10 @@ def serve_frontend():
     return send_from_directory(app.static_folder, "index.html")
 
 
+def open_browser():
+    webbrowser.open("http://127.0.0.1:8080/")
+
+
 if __name__ == "__main__":
+    threading.Timer(1, open_browser).start()  # Delay to give server time to start
     app.run(host="127.0.0.1", port=8080, debug=True)
