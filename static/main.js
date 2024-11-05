@@ -1,13 +1,22 @@
-// @ts-nocheck
-
 class Queue {
+  /**
+   * @typedef {{value: any, next: QueueNode | undefined}} QueueNode
+   */
+
   constructor() {
+    /** @type {QueueNode | undefined} */
     this.head = undefined;
+
+    /** @type {QueueNode | undefined} */
     this.tail = undefined;
   }
 
   enqueue(value) {
-    const newNode = { value, next: undefined };
+    /** @type {QueueNode} */
+    const newNode = {
+      value,
+      next: undefined,
+    };
 
     if (this.tail) {
       this.tail.next = newNode;
@@ -22,6 +31,7 @@ class Queue {
       return undefined;
     }
 
+    /** @type {QueueNode} */
     const value = this.head.value;
     this.head = this.head.next;
 
@@ -43,14 +53,14 @@ class Robot {
    * @constructor
    * @param {number} x - X position
    * @param {number} y - Y position
-   * @param {number} id - Robot's id
+   * @param {string} id - Robot's id
    * @param {string} color - Robot's color
    * @param {number} speed - Robot's speed
    */
   constructor(x, y, id, color, speed) {
     /** @type {number} */ this.x = x;
     /** @type {number} */ this.y = y;
-    /** @type {number} */ this.id = id;
+    /** @type {string} */ this.id = id;
     /** @type {string} */ this.color = color;
     /** @type {number} */ this.speed = speed;
     /** @type {number} */ this.radius = ROBOT_SIZE;
@@ -92,9 +102,6 @@ class Robot {
   update() {
     clearCanvas();
     this.draw(ctx);
-
-    this.x += this.dx;
-    this.y += this.dy;
   }
 }
 
@@ -103,11 +110,9 @@ window.addEventListener("resize", resizeCanvas);
 // Constants
 const ROBOT_SIZE = 6;
 
-/** @type {HTMLCanvasElement} */
-let canvas = document.getElementById("canvas");
+let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
 
-/** @type {CanvasRenderingContext2D} */
-let ctx = canvas.getContext("2d");
+let ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
 
 /** @type {number} */
 let window_height = window.innerHeight;
@@ -160,7 +165,7 @@ function clearCanvas() {
   ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 }
 
-let robot = new Robot(0, 0, 1, "red", 1);
+let robot = new Robot(0, 0, "1", "red", 1);
 robot.draw(ctx);
 
 function getRandomColor() {
@@ -189,7 +194,7 @@ function drawSnapshot(snapshot) {
   let robotsHistory = snapshot[1];
   for (let id in robotsHistory) {
     if (robots[id] === undefined) {
-      robots[id] = new Robot(undefined, undefined, id, getRandomColor(), 1);
+      robots[id] = new Robot(0, 0, id, getRandomColor(), 1);
     }
 
     let [x, y] = robotsHistory[id][0];
@@ -199,5 +204,7 @@ function drawSnapshot(snapshot) {
 }
 
 function updateTimeElement(time) {
-  document.getElementById("time-value").innerText = time;
+  const timeElem = /** @type {HTMLElement}*/ (document.getElementById("time-value"));
+
+  timeElem.innerText = time;
 }
