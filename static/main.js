@@ -38,15 +38,28 @@ class Queue {
 }
 
 class Robot {
+  /**
+   * Represents a robot
+   * @constructor
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   * @param {number} id - Robot's id
+   * @param {string} color - Robot's color
+   * @param {number} speed - Robot's speed
+   */
   constructor(x, y, id, color, speed) {
-    this.x = x;
-    this.y = y;
-    this.id = id;
-    this.color = color;
-    this.speed = speed;
-    this.radius = ROBOT_SIZE;
+    /** @type {number} */ this.x = x;
+    /** @type {number} */ this.y = y;
+    /** @type {number} */ this.id = id;
+    /** @type {string} */ this.color = color;
+    /** @type {number} */ this.speed = speed;
+    /** @type {number} */ this.radius = ROBOT_SIZE;
   }
 
+  /**
+   * Draws a Robot on the canvas
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   */
   draw(ctx) {
     ctx.beginPath();
 
@@ -67,6 +80,10 @@ class Robot {
     // ctx.stroke();
   }
 
+  /**
+   * @param {number} x - New X position
+   * @param {number} y - New Y position
+   */
   updatePosition(x, y) {
     this.x = x * 10;
     this.y = y * 10;
@@ -86,15 +103,24 @@ window.addEventListener("resize", resizeCanvas);
 // Constants
 const ROBOT_SIZE = 6;
 
+/** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("canvas");
+
+/** @type {CanvasRenderingContext2D} */
 let ctx = canvas.getContext("2d");
 
+/** @type {number} */
 let window_height = window.innerHeight;
+
+/** @type {number} */
 let window_width = window.innerWidth;
 
 resizeCanvas();
+
+/** @type {Object.<number, Robot>}*/
 let robots = {};
 let snapshotQueue = new Queue();
+
 let intervalId = undefined;
 
 const eventSource = new EventSource("/api/data");
