@@ -54,6 +54,8 @@ scheduler = Scheduler(
     initial_positions=initial_positions,
     robot_speeds=config["robot_speeds"],
     rigid_movement=config["rigid_movement"],
+    time_precision=config["time_precision"],
+    threshold_precision=config["threshold_precision"],
 )
 
 
@@ -61,6 +63,13 @@ from flask import Flask, jsonify, request, Response, send_from_directory
 import webbrowser
 import threading
 import json
+
+
+# Disable Flask’s default logging to the root logger
+log = logging.getLogger(
+    "werkzeug"
+)  # 'werkzeug' is the logger used by Flask for requests
+log.setLevel(logging.ERROR)  # Set Flask's logging to a different level or disable it
 
 app = Flask(__name__, static_folder="static")
 
@@ -72,6 +81,8 @@ def get_data():
         initial_positions=initial_positions,
         robot_speeds=config["robot_speeds"],
         rigid_movement=config["rigid_movement"],
+        time_precision=config["time_precision"],
+        threshold_precision=config["threshold_precision"],
     )
 
     def run_simulation():

@@ -18,6 +18,7 @@ class Robot:
         multiplicity_detection: bool = False,
         rigid_movement: bool = False,
         coordinates: Coordinates = None,
+        threshold_precision: float = 5,
     ):
         self.speed = speed
         self.color = color
@@ -37,6 +38,8 @@ class Robot:
         self.snapshot: dict[Id, tuple[Coordinates, State]] = None
         self.coordinates = coordinates
         self.id = id
+        self.threshold_precision = threshold_precision
+        self.position_reached = False
 
     def look(self, snapshot: dict[Id, tuple[Coordinates, State]], time: float) -> None:
         self.snapshot = {
@@ -44,9 +47,20 @@ class Robot:
             for key, value in snapshot.items()
             if self._robot_is_visible(value[0])
         }
-        logger.info(f"[{time:.6f}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
+        logger.info(f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
 
         self.calculated_position = self._compute(self._midpoint)
+
+        if self._distance(self.calculated_position, self.coordinates) < math.pow(
+            10, -self.threshold_precision
+        ):
+            self.position_reached = True
+        else:
+            self.position_reached = False
+
+        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+
         # sec = self._smallest_enclosing_circle()
         # pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
         # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
@@ -57,7 +71,7 @@ class Robot:
         return coord
 
     def move(self, start_time: float) -> None:
-        logger.info(f"[{start_time:.6f}] {{R{self.id}}} MOVE")
+        logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
 
@@ -69,7 +83,7 @@ class Robot:
 
         self.start_position = self.coordinates
         logger.info(
-            f"[{time:.6f}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
+            f"[{time}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
         )
 
         self.calculated_position = None

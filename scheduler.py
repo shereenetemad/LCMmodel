@@ -26,6 +26,8 @@ class Scheduler:
         multiplicity_detection: bool = False,
         probability_distribution: str = DistributionType.GAUSSIAN,
         scheduler_type: str = SchedulerType.ASYNC,
+        time_precision: float = 5,
+        threshold_precision: float = 5,
     ):
         self.terminate = False
         self.rigid_movement = rigid_movement
@@ -37,12 +39,18 @@ class Scheduler:
         self.robot_orientations = robot_orientations
         self.robot_colors = robot_colors
         self.obstructed_visibility = obstructed_visibility
+        self.time_precision = time_precision
+        self.threshold_precision = threshold_precision
         self.snapshot_history: list[tuple[Time, dict[int, tuple[Coordinates, str]]]] = (
             []
         )
         self.robots: list[Robot] = []
         for i in range(num_of_robots):
-            new_robot = Robot(id=i, coordinates=tuple(initial_positions[i]))
+            new_robot = Robot(
+                id=i,
+                coordinates=tuple(initial_positions[i]),
+                threshold_precision=threshold_precision,
+            )
             self.robots.append(new_robot)
 
         self.initialize_queue_exponential()
@@ -53,7 +61,7 @@ class Scheduler:
             snapshot[robot.id] = (robot.get_position(time), robot.state)
 
         self.snapshot_history.append((time, snapshot))
-        if self.unchanged_history(15) == True:
+        if self.all_robots_reached() == True:
             self.terminate = True
         return snapshot
 
@@ -69,6 +77,8 @@ class Scheduler:
             new_event_time = current_event[2] + self.generator.exponential(
                 scale=1 / self.lambda_rate
             )
+
+        new_event_time = self.precise_time(new_event_time)
 
         new_event = (
             new_event_time,
@@ -86,7 +96,7 @@ class Scheduler:
 
         next_state = next_event[1]
         robot = self.robots[next_event[0]]
-        time = next_event[2]
+        time = self.precise_time(next_event[2])
 
         if next_state == RobotState.LOOK:
             robot.state = RobotState.LOOK
@@ -129,36 +139,26 @@ class Scheduler:
         num_of_events = len(self.robots)
         time_intervals = self.generator.exponential(
             scale=1 / self.lambda_rate, size=num_of_events
-        )
+        ).round(self.time_precision)
 
-        logger.info(f"Time intervals between events: {time_intervals}")
+        logger.info(
+            f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
+        )
 
         self.priority_queue: list[tuple[Priority, tuple[Id, RobotState, Time]]] = []
 
         for robot in self.robots:
-            time = time_intervals[robot.id]
+            time = self.precise_time(time_intervals[robot.id])
             item = (robot.id, robot.state.next_state(), time)
             self.priority_queue.append((time, item))
 
         heapq.heapify(self.priority_queue)
 
-    def unchanged_history(self, max_history) -> bool:
-        length = len(self.snapshot_history)
-        if length <= 1:
-            return False
+    def all_robots_reached(self) -> bool:
+        for robot in self.robots:
+            if robot.position_reached == False:
+                return False
+        return True
 
-        count = max_history
-        for i in range(length - 1, 0, -1):
-            if count == 0:
-                return True
-
-            for robot_id in range(len(self.robots)):
-                if (
-                    self.snapshot_history[i][1][robot_id][0]
-                    != self.snapshot_history[i - 1][1][robot_id][0]
-                ):
-                    return False
-
-            count -= 1
-
-        return count <= 0
+    def precise_time(self, x: Time) -> Time:
+        return round(x, self.time_precision)
