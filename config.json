@@ -13,5 +13,7 @@
   "multiplicity_detection": false,
   "robot_colors": "#000000",
   "obstructed_visibility": false,
-  "rigid_movement": true
+  "rigid_movement": true,
+  "time_precision": 4,
+  "threshold_precision": 5
 }
