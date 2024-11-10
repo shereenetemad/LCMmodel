@@ -14,6 +14,13 @@ logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format
 with open("config.json", "r") as file:
     config = json.load(file)
 
+
+def clear_log():
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format="")
+
+
 if isinstance(config["initial_positions"], list) and config["number_of_robots"] != len(
     config["initial_positions"]
 ):
@@ -46,10 +53,14 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
 # num_of_robots = config["number_of_robots"]
 # initial_positions = config["initial_positions"]
 
+seed = np.random.default_rng().integers(0, 2**32 - 1)
+generator = np.random.default_rng(seed=seed)
+
 num_of_robots = 10
-initial_positions = np.random.uniform(low=-25, high=25, size=(num_of_robots, 2))
+initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
 
 scheduler = Scheduler(
+    seed=seed,
     num_of_robots=num_of_robots,
     initial_positions=initial_positions,
     robot_speeds=config["robot_speeds"],
@@ -76,7 +87,9 @@ app = Flask(__name__, static_folder="static")
 
 @app.route("/api/data", methods=["GET"])
 def get_data():
+    clear_log()
     scheduler = Scheduler(
+        seed=seed,
         num_of_robots=num_of_robots,
         initial_positions=initial_positions,
         robot_speeds=config["robot_speeds"],

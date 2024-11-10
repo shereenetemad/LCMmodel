@@ -35,65 +35,85 @@ class Robot:
         self.calculated_position = None
         self.number_of_activations = 0
         self.travelled_distance = 0.0
-        self.snapshot: dict[Id, tuple[Coordinates, State]] = None
+        self.snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]] = None
         self.coordinates = coordinates
         self.id = id
         self.threshold_precision = threshold_precision
-        self.position_reached = False
+        self.frozen = False
+        self.terminated = False
 
-    def look(self, snapshot: dict[Id, tuple[Coordinates, State]], time: float) -> None:
+    def look(
+        self,
+        snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]],
+        time: float,
+    ) -> None:
+        self.state = RobotState.LOOK
+
         self.snapshot = {
             key: self._convert_coordinate(value)
             for key, value in snapshot.items()
             if self._robot_is_visible(value[0])
         }
-        logger.info(f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.snapshot}")
+        logger.info(
+            f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
+        )
 
-        self.calculated_position = self._compute(self._midpoint)
+        self.calculated_position = self._compute(
+            self._midpoint, self._midpoint_terminal
+        )
+
+        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
 
         if self._distance(self.calculated_position, self.coordinates) < math.pow(
             10, -self.threshold_precision
         ):
-            self.position_reached = True
+            self.frozen = True
+            self.wait(time)
         else:
-            self.position_reached = False
-
-        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
-        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+            self.frozen = False
 
         # sec = self._smallest_enclosing_circle()
         # pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
         # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
         # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
 
-    def _compute(self, algo) -> Coordinates:
+    def _compute(self, algo, check_terminal) -> Coordinates:
         coord = algo()
+
+        if check_terminal() == True:
+            self.terminated = True
+
         return coord
 
     def move(self, start_time: float) -> None:
+        self.state = RobotState.MOVE
+
         logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
 
     def wait(self, time: float) -> None:
+        self.state = RobotState.WAIT
+
         self.end_time = time
 
         self.coordinates = self.get_position(time)
-        self.travelled_distance += math.dist(self.start_position, self.coordinates)
+        current_distance = math.dist(self.start_position, self.coordinates)
+        self.travelled_distance += current_distance
 
         self.start_position = self.coordinates
         logger.info(
-            f"[{time}] {{R{self.id}}} WAIT    -- Travelled a total of {self.travelled_distance} units"
+            f"[{time}] {{R{self.id}}} WAIT    -- Distance: {current_distance} | Total Distance: {self.travelled_distance} units"
         )
 
-        self.calculated_position = None
         self.start_time = None
         self.end_time = None
 
     def get_position(self, time: float) -> Coordinates:
         self.current_time = time
 
-        if self.calculated_position == None:
+        if self.state == RobotState.WAIT:
             return self.coordinates
 
         distance = math.dist(self.start_position, self.calculated_position)
@@ -130,6 +150,16 @@ class Robot:
         y = y / len(self.snapshot)
 
         return (x, y)
+
+    def _midpoint_terminal(self) -> bool:
+        num_robots = len(self.snapshot.keys())
+        for i in range(num_robots - 1):
+            for j in range(i, num_robots):
+                if self._distance(
+                    self.snapshot[i][0], self.snapshot[j][0]
+                ) > 2 * math.pow(10, -self.threshold_precision):
+                    return False
+        return True
 
     def _smallest_enclosing_circle(self) -> Coordinates:
         num_robots = len(self.snapshot)
@@ -230,7 +260,20 @@ class Robot:
         return ((cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
-        return math.sqrt(pow(a[0] - b[0], 2) + pow(a[1] - b[1], 2))
+        distance = math.dist(a, b)
+
+        return distance
 
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
+
+    def prettify_snapshot(
+        self, snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]]
+    ) -> str:
+        result = ""
+        for key, value in snapshot.items():
+            frozen = "*" if value[2] == True else ""
+            terminated = "#" if value[3] == True else ""
+            result += f"\n\t{key}{frozen}{terminated}: {value[1]} - ({float(value[0][0]),float(value[0][1])})"
+
+        return result

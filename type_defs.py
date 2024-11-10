@@ -7,3 +7,5 @@ Translation = float
 Rotation = float
 Reflection = float
 Circle = tuple[Coordinates, float]
+Terminated = bool
+Frozen = bool

@@ -5,6 +5,7 @@ class RobotState(str, Enum):
     LOOK = "LOOK"
     MOVE = "MOVE"
     WAIT = "WAIT"
+    TERMINATED = "TERMINATED"
 
     def next_state(self):
         if self == RobotState.LOOK:

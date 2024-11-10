@@ -13,6 +13,7 @@ class Scheduler:
 
     def __init__(
         self,
+        seed: int,
         num_of_robots: int,
         initial_positions: list[float] | None,
         robot_speeds: float | list[float],
@@ -29,6 +30,7 @@ class Scheduler:
         time_precision: float = 5,
         threshold_precision: float = 5,
     ):
+        self.seed = seed
         self.terminate = False
         self.rigid_movement = rigid_movement
         self.multiplicity_detection = multiplicity_detection
@@ -41,9 +43,9 @@ class Scheduler:
         self.obstructed_visibility = obstructed_visibility
         self.time_precision = time_precision
         self.threshold_precision = threshold_precision
-        self.snapshot_history: list[tuple[Time, dict[int, tuple[Coordinates, str]]]] = (
-            []
-        )
+        self.snapshot_history: list[
+            tuple[Time, dict[int, tuple[Coordinates, State, Frozen, Terminated]]]
+        ] = []
         self.robots: list[Robot] = []
         for i in range(num_of_robots):
             new_robot = Robot(
@@ -55,21 +57,27 @@ class Scheduler:
 
         self.initialize_queue_exponential()
 
-    def get_snapshot(self, time: float) -> dict[int, tuple[Coordinates, str]]:
+    def get_snapshot(
+        self, time: float
+    ) -> dict[int, tuple[Coordinates, State, Frozen, Terminated]]:
         snapshot = {}
         for robot in self.robots:
-            snapshot[robot.id] = (robot.get_position(time), robot.state)
+            snapshot[robot.id] = (
+                robot.get_position(time),
+                robot.state,
+                robot.frozen,
+                robot.terminated,
+            )
 
         self.snapshot_history.append((time, snapshot))
-        if self.all_robots_reached() == True:
-            self.terminate = True
         return snapshot
 
     def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
         new_event_time = 0.0
+        robot = self.robots[current_event[0]]
 
+        # Robot will definitely reach calculated position
         if self.rigid_movement == True and current_event[1] == RobotState.MOVE:
-            robot = self.robots[current_event[0]]
             new_event_time = current_event[2] + (
                 math.dist(robot.calculated_position, robot.start_position) / robot.speed
             )
@@ -79,39 +87,42 @@ class Scheduler:
             )
 
         new_event_time = self.precise_time(new_event_time)
+        new_event_state = robot.state.next_state()
 
         new_event = (
             new_event_time,
-            (current_event[0], current_event[1].next_state(), new_event_time),
+            (current_event[0], new_event_state, new_event_time),
         )
 
         heapq.heappush(self.priority_queue, new_event)
 
-    def handle_event(self) -> bool:
-        if self.terminate == True:
-            return -1
+    def handle_event(self) -> int:
+        exit_code = -1
 
-        exit_code = None
-        next_event = heapq.heappop(self.priority_queue)[1]
+        if len(self.priority_queue) == 0:
+            return exit_code
 
-        next_state = next_event[1]
-        robot = self.robots[next_event[0]]
-        time = self.precise_time(next_event[2])
+        current_event = heapq.heappop(self.priority_queue)[1]
 
-        if next_state == RobotState.LOOK:
-            robot.state = RobotState.LOOK
+        event_state = current_event[1]
+        robot = self.robots[current_event[0]]
+        time = self.precise_time(current_event[2])
+
+        if event_state == RobotState.LOOK:
             robot.look(self.get_snapshot(time), time)
+
+            # Removes robot from simulation
+            if robot.terminated == True:
+                return 4
             exit_code = 1
-        elif next_state == RobotState.MOVE:
-            robot.state = RobotState.MOVE
+        elif event_state == RobotState.MOVE:
             robot.move(time)
             exit_code = 2
-        elif next_state == RobotState.WAIT:
-            robot.state = RobotState.WAIT
+        elif event_state == RobotState.WAIT:
             robot.wait(time)
             exit_code = 3
 
-        self.generate_event(next_event)
+        self.generate_event(current_event)
         return exit_code
 
     def initialize_queue(self) -> None:
@@ -131,11 +142,10 @@ class Scheduler:
         self.lambda_rate = 5  # Average number of events per time unit
 
         # Generate a random number
-        self.generator_seed = np.random.default_rng().integers(0, 2**32 - 1)
-        logger.info(f"Seed used: {self.generator_seed}")
+        logger.info(f"Seed used: {self.seed}")
 
         # Generate time intervals for n events
-        self.generator = np.random.default_rng(seed=self.generator_seed)
+        self.generator = np.random.default_rng(seed=self.seed)
         num_of_events = len(self.robots)
         time_intervals = self.generator.exponential(
             scale=1 / self.lambda_rate, size=num_of_events
@@ -156,7 +166,7 @@ class Scheduler:
 
     def all_robots_reached(self) -> bool:
         for robot in self.robots:
-            if robot.position_reached == False:
+            if robot.frozen == False:
                 return False
         return True
 
