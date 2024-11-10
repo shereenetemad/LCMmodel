@@ -18,17 +18,15 @@ class Scheduler:
         initial_positions: list[float] | None,
         robot_speeds: float | list[float],
         visibility_radius: float | list[float] | None = None,
-        robot_orientations: (
-            list[tuple[Translation, Rotation, Reflection]] | None
-        ) = None,
+        robot_orientations: list[Orientation] | None = None,
         robot_colors: list[str] | None = None,
         obstructed_visibility: bool = False,
         rigid_movement: bool = True,
         multiplicity_detection: bool = False,
         probability_distribution: str = DistributionType.GAUSSIAN,
         scheduler_type: str = SchedulerType.ASYNC,
-        time_precision: float = 5,
-        threshold_precision: float = 5,
+        time_precision: int = 5,
+        threshold_precision: int = 5,
     ):
         self.seed = seed
         self.terminate = False
@@ -43,26 +41,22 @@ class Scheduler:
         self.obstructed_visibility = obstructed_visibility
         self.time_precision = time_precision
         self.threshold_precision = threshold_precision
-        self.snapshot_history: list[
-            tuple[Time, dict[int, tuple[Coordinates, State, Frozen, Terminated]]]
-        ] = []
+        self.snapshot_history: list[tuple[Time, dict[int, SnapshotDetails]]] = []
         self.robots: list[Robot] = []
         for i in range(num_of_robots):
             new_robot = Robot(
                 id=i,
-                coordinates=tuple(initial_positions[i]),
+                coordinates=Coordinates(*initial_positions[i]),
                 threshold_precision=threshold_precision,
             )
             self.robots.append(new_robot)
 
         self.initialize_queue_exponential()
 
-    def get_snapshot(
-        self, time: float
-    ) -> dict[int, tuple[Coordinates, State, Frozen, Terminated]]:
+    def get_snapshot(self, time: float) -> dict[int, SnapshotDetails]:
         snapshot = {}
         for robot in self.robots:
-            snapshot[robot.id] = (
+            snapshot[robot.id] = SnapshotDetails(
                 robot.get_position(time),
                 robot.state,
                 robot.frozen,
@@ -72,29 +66,29 @@ class Scheduler:
         self.snapshot_history.append((time, snapshot))
         return snapshot
 
-    def generate_event(self, current_event: tuple[Id, RobotState, Time]) -> None:
+    def generate_event(self, current_event: Event) -> None:
         new_event_time = 0.0
-        robot = self.robots[current_event[0]]
+        robot = self.robots[current_event.id]
 
         # Robot will definitely reach calculated position
-        if self.rigid_movement == True and current_event[1] == RobotState.MOVE:
-            new_event_time = current_event[2] + (
+        if self.rigid_movement == True and current_event.state == RobotState.MOVE:
+            new_event_time = current_event.time + (
                 math.dist(robot.calculated_position, robot.start_position) / robot.speed
             )
         else:
-            new_event_time = current_event[2] + self.generator.exponential(
+            new_event_time = current_event.time + self.generator.exponential(
                 scale=1 / self.lambda_rate
             )
 
-        new_event_time = self.precise_time(new_event_time)
+        new_event_time = self._precise_time(new_event_time)
         new_event_state = robot.state.next_state()
 
-        new_event = (
+        priority_event = PriorityEvent(
             new_event_time,
-            (current_event[0], new_event_state, new_event_time),
+            Event(current_event.id, new_event_state, new_event_time),
         )
 
-        heapq.heappush(self.priority_queue, new_event)
+        heapq.heappush(self.priority_queue, priority_event)
 
     def handle_event(self) -> int:
         exit_code = -1
@@ -104,9 +98,9 @@ class Scheduler:
 
         current_event = heapq.heappop(self.priority_queue)[1]
 
-        event_state = current_event[1]
-        robot = self.robots[current_event[0]]
-        time = self.precise_time(current_event[2])
+        event_state = current_event.state
+        robot = self.robots[current_event.id]
+        time = self._precise_time(current_event.time)
 
         if event_state == RobotState.LOOK:
             robot.look(self.get_snapshot(time), time)
@@ -155,20 +149,20 @@ class Scheduler:
             f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
         )
 
-        self.priority_queue: list[tuple[Priority, tuple[Id, RobotState, Time]]] = []
+        self.priority_queue: list[PriorityEvent] = []
 
         for robot in self.robots:
-            time = self.precise_time(time_intervals[robot.id])
-            item = (robot.id, robot.state.next_state(), time)
-            self.priority_queue.append((time, item))
+            time = self._precise_time(time_intervals[robot.id])
+            event = Event(robot.id, robot.state.next_state(), time)
+            self.priority_queue.append(PriorityEvent(time, event))
 
         heapq.heapify(self.priority_queue)
 
-    def all_robots_reached(self) -> bool:
+    def _all_robots_reached(self) -> bool:
         for robot in self.robots:
             if robot.frozen == False:
                 return False
         return True
 
-    def precise_time(self, x: Time) -> Time:
+    def _precise_time(self, x: float) -> float:
         return round(x, self.time_precision)

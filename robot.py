@@ -10,14 +10,14 @@ class Robot:
     def __init__(
         self,
         id: int,
+        coordinates: Coordinates,
         speed: float = 1.0,
         color: str | None = None,
         visibility_radius: float | None = None,
-        orientation: tuple[float, float, float] | None = None,
+        orientation: Orientation | None = None,
         obstructed_visibility: bool = False,
         multiplicity_detection: bool = False,
         rigid_movement: bool = False,
-        coordinates: Coordinates = None,
         threshold_precision: float = 5,
     ):
         self.speed = speed
@@ -35,7 +35,7 @@ class Robot:
         self.calculated_position = None
         self.number_of_activations = 0
         self.travelled_distance = 0.0
-        self.snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]] = None
+        self.snapshot: dict[Id, SnapshotDetails] | None = None
         self.coordinates = coordinates
         self.id = id
         self.threshold_precision = threshold_precision
@@ -44,16 +44,19 @@ class Robot:
 
     def look(
         self,
-        snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]],
+        snapshot: dict[Id, SnapshotDetails],
         time: float,
     ) -> None:
         self.state = RobotState.LOOK
 
-        self.snapshot = {
-            key: self._convert_coordinate(value)
-            for key, value in snapshot.items()
-            if self._robot_is_visible(value[0])
-        }
+        self.snapshot = {}
+        for key, value in snapshot.items():
+            if self._robot_is_visible(value.pos):
+                transformed_pos = self._convert_coordinate(value.pos)
+                self.snapshot[key] = SnapshotDetails(
+                    transformed_pos, value.state, value.frozen, value.terminated
+                )
+
         logger.info(
             f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
         )
@@ -132,7 +135,9 @@ class Robot:
     def _interpolate(
         self, start: Coordinates, end: Coordinates, t: float
     ) -> Coordinates:
-        return (start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1]))
+        return Coordinates(
+            start.x + t * (end.x - start.x), start.y + t * (end.y - start.y)
+        )
 
     def _convert_coordinate(self, coord: Coordinates) -> Coordinates:
         return coord
@@ -143,18 +148,18 @@ class Robot:
     def _midpoint(self) -> Coordinates:
         x = y = 0
         for _, value in self.snapshot.items():
-            x += value[0][0]
-            y += value[0][1]
+            x += value.pos.x
+            y += value.pos.y
 
         x = x / len(self.snapshot)
         y = y / len(self.snapshot)
 
-        return (x, y)
+        return Coordinates(x, y)
 
     def _midpoint_terminal(self, coord) -> bool:
         num_robots = len(self.snapshot.keys())
         for i in range(num_robots - 1):
-            if self._distance(self.snapshot[i][0], coord) > math.pow(
+            if self._distance(self.snapshot[i].pos, coord) > math.pow(
                 10, -self.threshold_precision
             ):
                 return False
@@ -166,7 +171,7 @@ class Robot:
         if num_robots == 0:
             destination = (0, 0)
         if num_robots == 1:
-            destination = self.snapshot[0][0]
+            destination = self.snapshot[0].pos
         else:
             sec: Circle = self._sec(num_robots)
             destination = self._closest_point_on_circle(sec, self.coordinates)
@@ -180,8 +185,8 @@ class Robot:
         sec: Circle = ((0, 0), 10**18)
         for i in range(num_robots):
             for j in range(i + 1, num_robots):
-                a = self.snapshot[i][0]
-                b = self.snapshot[j][0]
+                a = self.snapshot[i].pos
+                b = self.snapshot[j].pos
                 circle = self._circle_from_two(a, b)
                 radius1 = circle[1]
                 radius2 = sec[1]
@@ -191,9 +196,9 @@ class Robot:
         for i in range(num_robots):
             for j in range(i + 1, num_robots):
                 for k in range(j + 1, num_robots):
-                    a = self.snapshot[i][0]
-                    b = self.snapshot[j][0]
-                    c = self.snapshot[k][0]
+                    a = self.snapshot[i].pos
+                    b = self.snapshot[j].pos
+                    c = self.snapshot[k].pos
                     circle = self._circle_from_three(a, b, c)
                     radius1 = circle[1]
                     radius2 = sec[1]
@@ -206,9 +211,9 @@ class Robot:
     ) -> Coordinates:
 
         # Vector from the center of the circle to the point
-        center: Coordinates = circle[0]
-        radius: float = circle[1]
-        vx, vy = point[0] - center[0], point[1] - center[1]
+        center: Coordinates = circle.center
+        radius: float = circle.radius
+        vx, vy = point.x - center.x, point.y - center.y
 
         # Distance from the center to the point
         d = self._distance(center, point)
@@ -217,10 +222,10 @@ class Robot:
         scale = radius / d
 
         # Closest point on the circle
-        cx = center[0] + vx * scale
-        cy = center[1] + vy * scale
+        cx = center.x + vx * scale
+        cy = center.y + vy * scale
 
-        return (cx, cy)
+        return Coordinates(cx, cy)
 
     def _valid_circle(self, circle: Circle) -> bool:
         """Returns False if at least one point does not lie within given circle"""
@@ -229,7 +234,7 @@ class Robot:
         for _, coord in self.snapshot.items():
             # If point does not lie inside of the given circle; i.e.: if
             # distance between the center coord and point is more than radius
-            if self._distance(circle[0], coord[0]) > circle[1]:
+            if self._distance(circle.center, coord[0]) > circle.radius:
                 return False
         return True
 
@@ -237,26 +242,27 @@ class Robot:
         """Returns circle intersecting two points"""
 
         # Midpoint between a and b
-        center = ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0)
-        return (center, self._distance(a, b) / 2.0)
+        center = Coordinates((a.x + b.x) / 2.0, (a.y + b.y) / 2.0)
+        return Circle(center, self._distance(a, b) / 2.0)
 
     def _circle_from_three(
         self, a: Coordinates, b: Coordinates, c: Coordinates
     ) -> Circle:
         """Returns circle intersecting three points"""
 
-        center = self._circle_center(b[0] - a[0], b[1] - a[1], c[0] - a[0], c[1] - a[1])
-        center[0] += a[0]
-        center[1] += a[1]
-        return (center, self._distance(center, a))
+        center = self._circle_center(b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y)
+
+        translated_center = Coordinates(center.x + a.x, center.y + a.y)
+
+        return Circle(translated_center, self._distance(center, a))
 
     def _circle_center(self, bx: float, by: float, cx: float, cy: float) -> Coordinates:
         b = bx * bx + by * by
         c = cx * cx + cy * cy
         d = bx * cy - by * cx
         if d == 0:
-            return (0, 0)
-        return ((cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d))
+            return Coordinates(0, 0)
+        return Coordinates((cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
         distance = math.dist(a, b)
@@ -266,13 +272,11 @@ class Robot:
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
 
-    def prettify_snapshot(
-        self, snapshot: dict[Id, tuple[Coordinates, State, Frozen, Terminated]]
-    ) -> str:
+    def prettify_snapshot(self, snapshot: dict[Id, SnapshotDetails]) -> str:
         result = ""
         for key, value in snapshot.items():
-            frozen = "*" if value[2] == True else ""
-            terminated = "#" if value[3] == True else ""
-            result += f"\n\t{key}{frozen}{terminated}: {value[1]} - ({float(value[0][0]),float(value[0][1])})"
+            frozen = "*" if value.frozen == True else ""
+            terminated = "#" if value.frozen == True else ""
+            result += f"\n\t{key}{frozen}{terminated}: {value[1]} - ({float(value.pos.x),float(value.pos.y)})"
 
         return result
