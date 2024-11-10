@@ -81,7 +81,7 @@ class Robot:
     def _compute(self, algo, check_terminal) -> Coordinates:
         coord = algo()
 
-        if check_terminal() == True:
+        if check_terminal(coord) == True:
             self.terminated = True
 
         return coord
@@ -151,14 +151,13 @@ class Robot:
 
         return (x, y)
 
-    def _midpoint_terminal(self) -> bool:
+    def _midpoint_terminal(self, coord) -> bool:
         num_robots = len(self.snapshot.keys())
         for i in range(num_robots - 1):
-            for j in range(i, num_robots):
-                if self._distance(
-                    self.snapshot[i][0], self.snapshot[j][0]
-                ) > 2 * math.pow(10, -self.threshold_precision):
-                    return False
+            if self._distance(self.snapshot[i][0], coord) > math.pow(
+                10, -self.threshold_precision
+            ):
+                return False
         return True
 
     def _smallest_enclosing_circle(self) -> Coordinates:
