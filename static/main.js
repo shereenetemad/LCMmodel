@@ -82,12 +82,14 @@ class Robot {
     ctx.closePath();
 
     // // Draw node label
-    // ctx.beginPath();
-    // ctx.strokeStyle = "#000";
-    // ctx.strokeText(this.id, this.x, this.y);
-    // ctx.textAlign = "left";
-    // ctx.font = "20px Arial";
-    // ctx.stroke();
+    ctx.beginPath();
+    ctx.strokeStyle = "#FFF";
+    ctx.strokeText(this.id, this.x, this.y);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "9px Arial";
+    ctx.fill();
+    ctx.stroke();
   }
 
   /**
@@ -108,27 +110,34 @@ class Robot {
 window.addEventListener("resize", resizeCanvas);
 
 // Constants
-const ROBOT_SIZE = 6;
+const ROBOT_SIZE = 8;
+const eventSource = new EventSource("/api/data");
 
+// Elements
 let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
+let pausePlayBtn = /** @type {HTMLButtonElement} */ (
+  document.getElementById("pause-play-btn")
+);
 
 let ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
 
+// Global variables
 /** @type {number} */
 let window_height = window.innerHeight;
 
 /** @type {number} */
 let window_width = window.innerWidth;
 
-resizeCanvas();
-
 /** @type {Object.<number, Robot>}*/
 let robots = {};
 let snapshotQueue = new Queue();
 
 let intervalId = undefined;
+let paused = false;
+let timePerFrameMs = 17;
 
-const eventSource = new EventSource("/api/data");
+pausePlayBtn.addEventListener("click", togglePausePlay);
+resizeCanvas();
 
 eventSource.onmessage = function (event) {
   if (event.data === "END") {
@@ -151,14 +160,16 @@ eventSource.onerror = function (event) {
 
 function startDrawingInterval() {
   intervalId = setInterval(() => {
-    const snapshot = snapshotQueue.dequeue();
-    if (!snapshot) {
-      clearInterval(intervalId);
-      return;
+    if (!paused) {
+      const snapshot = snapshotQueue.dequeue();
+      if (!snapshot) {
+        clearInterval(intervalId);
+        return;
+      }
+      clearCanvas();
+      drawSnapshot(snapshot);
     }
-    clearCanvas();
-    drawSnapshot(snapshot);
-  }, 17);
+  }, timePerFrameMs);
 }
 
 function clearCanvas() {
@@ -194,7 +205,7 @@ function drawSnapshot(snapshot) {
   let robotsHistory = snapshot[1];
   for (let id in robotsHistory) {
     if (robots[id] === undefined) {
-      robots[id] = new Robot(0, 0, id, getRandomColor(), 1);
+      robots[id] = new Robot(0, 0, id, "black", 1);
     }
 
     let [x, y] = robotsHistory[id][0];
@@ -207,4 +218,14 @@ function updateTimeElement(time) {
   const timeElem = /** @type {HTMLElement}*/ (document.getElementById("time-value"));
 
   timeElem.innerText = time;
+}
+
+function togglePausePlay() {
+  paused = !paused;
+
+  if (paused) {
+    pausePlayBtn.innerText = "Play";
+  } else {
+    pausePlayBtn.innerText = "Pause";
+  }
 }

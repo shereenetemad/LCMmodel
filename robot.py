@@ -39,7 +39,7 @@ class Robot:
         self.coordinates = coordinates
         self.id = id
         self.threshold_precision = threshold_precision
-        self.frozen = False
+        self.frozen = False  # true if we skipped move step
         self.terminated = False
 
     def look(

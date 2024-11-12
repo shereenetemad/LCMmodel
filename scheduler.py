@@ -27,6 +27,8 @@ class Scheduler:
         scheduler_type: str = SchedulerType.ASYNC,
         time_precision: int = 5,
         threshold_precision: int = 5,
+        sampling_rate: float = 0.2,
+        labmda_rate: float = 5,
     ):
         self.seed = seed
         self.terminate = False
@@ -42,18 +44,28 @@ class Scheduler:
         self.time_precision = time_precision
         self.threshold_precision = threshold_precision
         self.snapshot_history: list[tuple[Time, dict[int, SnapshotDetails]]] = []
+        self.visualization_snapshots: list[tuple[Time, dict[int, SnapshotDetails]]] = []
+        self.sampling_rate = sampling_rate
+        self.lambda_rate = labmda_rate  # Average number of events per time unit
         self.robots: list[Robot] = []
+
+        if isinstance(robot_speeds, float):
+            robot_speeds_list = [robot_speeds] * num_of_robots
+
         for i in range(num_of_robots):
             new_robot = Robot(
                 id=i,
                 coordinates=Coordinates(*initial_positions[i]),
                 threshold_precision=threshold_precision,
+                speed=robot_speeds_list[i],
             )
             self.robots.append(new_robot)
 
         self.initialize_queue_exponential()
 
-    def get_snapshot(self, time: float) -> dict[int, SnapshotDetails]:
+    def get_snapshot(
+        self, time: float, visualization_snapshot: bool = False
+    ) -> dict[int, SnapshotDetails]:
         snapshot = {}
         for robot in self.robots:
             snapshot[robot.id] = SnapshotDetails(
@@ -63,10 +75,24 @@ class Scheduler:
                 robot.terminated,
             )
 
-        self.snapshot_history.append((time, snapshot))
+        if visualization_snapshot:
+            self.visualization_snapshots.append((time, snapshot))
+        else:
+            self.snapshot_history.append((time, snapshot))
+
         return snapshot
 
     def generate_event(self, current_event: Event) -> None:
+        # Visualization events
+        if current_event.state == None and len(self.priority_queue) > 0:
+            new_event_time = current_event.time + self.sampling_rate
+            priority_event = PriorityEvent(
+                new_event_time,
+                Event(-1, None, new_event_time),
+            )
+            heapq.heappush(self.priority_queue, priority_event)
+            return
+
         new_event_time = 0.0
         robot = self.robots[current_event.id]
 
@@ -115,6 +141,9 @@ class Scheduler:
         elif event_state == RobotState.WAIT:
             robot.wait(time)
             exit_code = 3
+        elif event_state == None:
+            self.get_snapshot(time, visualization_snapshot=True)
+            exit_code = 0
 
         self.generate_event(current_event)
         return exit_code
@@ -132,10 +161,6 @@ class Scheduler:
         logger.info(poisson_numbers)
 
     def initialize_queue_exponential(self) -> None:
-        # Set the rate parameter (lambda)
-        self.lambda_rate = 5  # Average number of events per time unit
-
-        # Generate a random number
         logger.info(f"Seed used: {self.seed}")
 
         # Generate time intervals for n events
@@ -149,7 +174,8 @@ class Scheduler:
             f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
         )
 
-        self.priority_queue: list[PriorityEvent] = []
+        initial_event = Event(-1, None, 0.0)  # initial event for visualization
+        self.priority_queue: list[PriorityEvent] = [PriorityEvent(0.0, initial_event)]
 
         for robot in self.robots:
             time = self._precise_time(time_intervals[robot.id])

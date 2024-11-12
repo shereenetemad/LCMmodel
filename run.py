@@ -1,11 +1,14 @@
 import json
+import socket
 from time import sleep
 from robot import Robot
 from scheduler import Scheduler
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import logging
+from flask import Flask, jsonify, request, Response, send_from_directory
+import webbrowser
+import threading
+import json
 
 
 logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format="")
@@ -50,32 +53,6 @@ if isinstance(config["robot_colors"], list) and config["number_of_robots"] != le
     )
 
 
-# num_of_robots = config["number_of_robots"]
-# initial_positions = config["initial_positions"]
-
-seed = np.random.default_rng().integers(0, 2**32 - 1)
-generator = np.random.default_rng(seed=seed)
-
-num_of_robots = 10
-initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
-
-scheduler = Scheduler(
-    seed=seed,
-    num_of_robots=num_of_robots,
-    initial_positions=initial_positions,
-    robot_speeds=config["robot_speeds"],
-    rigid_movement=config["rigid_movement"],
-    time_precision=config["time_precision"],
-    threshold_precision=config["threshold_precision"],
-)
-
-
-from flask import Flask, jsonify, request, Response, send_from_directory
-import webbrowser
-import threading
-import json
-
-
 # Disable Flask’s default logging to the root logger
 log = logging.getLogger(
     "werkzeug"
@@ -83,6 +60,16 @@ log = logging.getLogger(
 log.setLevel(logging.ERROR)  # Set Flask's logging to a different level or disable it
 
 app = Flask(__name__, static_folder="static")
+
+# seed = np.random.default_rng().integers(0, 2**32 - 1)
+seed = 3070838287
+generator = np.random.default_rng(seed=seed)
+
+# num_of_robots = config["number_of_robots"]
+# initial_positions = config["initial_positions"]
+
+num_of_robots = 10
+initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
 
 
 @app.route("/api/data", methods=["GET"])
@@ -96,14 +83,18 @@ def get_data():
         rigid_movement=config["rigid_movement"],
         time_precision=config["time_precision"],
         threshold_precision=config["threshold_precision"],
+        sampling_rate=config["sampling_rate"],
+        labmda_rate=config["labmda_rate"],
     )
 
     def run_simulation():
         while True:
             exit_code = scheduler.handle_event()
 
-            if exit_code == 1:
-                yield f"data:{json.dumps(scheduler.snapshot_history[-1])}\n\n"
+            if exit_code == 1 or exit_code == 0:
+                snapshots = scheduler.visualization_snapshots
+                if len(snapshots) > 0:
+                    yield f"data:{json.dumps(snapshots[-1])}\n\n"
 
             if exit_code < 0:
                 yield "data:END\n\n"
@@ -117,10 +108,20 @@ def serve_frontend():
     return send_from_directory(app.static_folder, "index.html")
 
 
-def open_browser():
-    webbrowser.open("http://127.0.0.1:8080/")
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-if __name__ == "__main__":
-    threading.Timer(1, open_browser).start()  # Delay to give server time to start
-    app.run(host="127.0.0.1", port=8080, debug=True, use_reloader=False)
+def open_browser(port):
+    webbrowser.open(f"http://127.0.0.1:{port}/")
+
+
+port = 8080
+while is_port_in_use(port):
+    port += 1
+
+# Open the browser after a delay to let server start
+threading.Timer(1, open_browser, args=(port,)).start()
+
+app.run(host="127.0.0.1", port=port, debug=True, use_reloader=False)
