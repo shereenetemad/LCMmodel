@@ -9,6 +9,7 @@ class Queue {
 
     /** @type {QueueNode | undefined} */
     this.tail = undefined;
+    this.size = 0;
   }
 
   enqueue(value) {
@@ -24,6 +25,8 @@ class Queue {
       this.head = newNode;
     }
     this.tail = newNode;
+
+    this.size++;
   }
 
   dequeue() {
@@ -39,6 +42,7 @@ class Queue {
       this.tail = undefined;
     }
 
+    this.size--;
     return value;
   }
 
@@ -111,7 +115,7 @@ window.addEventListener("resize", resizeCanvas);
 
 // Constants
 const ROBOT_SIZE = 8;
-const eventSource = new EventSource("/api/data");
+// const eventSource = new EventSource("/api/data");
 
 // Elements
 let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
@@ -132,44 +136,61 @@ let window_width = window.innerWidth;
 let robots = {};
 let snapshotQueue = new Queue();
 
-let intervalId = undefined;
 let paused = false;
 let timePerFrameMs = 17;
+let lastFrameTime = 0;
+let stopAnimation = false;
 
 pausePlayBtn.addEventListener("click", togglePausePlay);
 resizeCanvas();
 
-eventSource.onmessage = function (event) {
-  if (event.data === "END") {
-    console.log("Simulation complete. Closing connection.");
+//@ts-ignore
+const socket = io(window.location.host);
 
-    eventSource.close();
-  } else {
-    if (!intervalId) {
-      startDrawingInterval();
-    }
-    const data = JSON.parse(event.data);
-    snapshotQueue.enqueue(data);
+socket.emit("start_simulation", {});
+
+socket.on("simulation_data", function (data) {
+  startDrawingLoop();
+  const _data = JSON.parse(data);
+  snapshotQueue.enqueue(_data);
+});
+
+socket.on("simulation_end", function (message) {
+  console.log("Simulation complete.");
+});
+
+function startDrawingLoop() {
+  // requestAnimationFrame initiates the animation loop
+  stopAnimation = false;
+  requestAnimationFrame(drawLoop); // Start the loop
+}
+
+function stopDrawingLoop() {
+  stopAnimation = true;
+}
+
+function drawLoop(currentTime) {
+  if (stopAnimation) {
+    return;
   }
-};
+  // Calculate the time since the last frame
+  const deltaTime = currentTime - lastFrameTime;
 
-eventSource.onerror = function (event) {
-  console.log("Error occured");
-  eventSource.close();
-};
-
-function startDrawingInterval() {
-  intervalId = setInterval(() => {
-    if (!paused) {
-      const snapshot = snapshotQueue.dequeue();
-      if (!snapshot) {
-        clearInterval(intervalId);
-        return;
-      }
+  // Check if enough time has passed to render a new frame
+  if (deltaTime >= timePerFrameMs && !paused) {
+    const snapshot = snapshotQueue.dequeue();
+    if (snapshot) {
       clearCanvas();
       drawSnapshot(snapshot);
+      lastFrameTime = currentTime; // Reset lastFrameTime for the next frame
+    } else {
+      stopDrawingLoop();
+      return;
     }
-  }, timePerFrameMs);
+  }
+
+  // Request the next frame
+  requestAnimationFrame(drawLoop);
 }
 
 function clearCanvas() {
