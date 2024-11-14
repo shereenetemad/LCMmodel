@@ -94,6 +94,7 @@ class Robot {
     ctx.font = "9px Arial";
     ctx.fill();
     ctx.stroke();
+    ctx.closePath();
   }
 
   /**
@@ -115,7 +116,6 @@ window.addEventListener("resize", resizeCanvas);
 
 // Constants
 const ROBOT_SIZE = 8;
-// const eventSource = new EventSource("/api/data");
 
 // Elements
 let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));

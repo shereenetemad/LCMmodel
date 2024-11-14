@@ -61,12 +61,22 @@ class Robot:
             f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
         )
 
+        # self.calculated_position = self._compute(
+        #     self._midpoint, self._midpoint_terminal
+        # )
+        # pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+        # logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+
         self.calculated_position = self._compute(
-            self._midpoint, self._midpoint_terminal
+            self._smallest_enclosing_circle, self._sec_terminal
         )
 
-        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
-        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+        dest, args = self._smallest_enclosing_circle()
+        sec = args[0]
+        logger.info(
+            f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {self.calculated_position}"
+        )
+        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
 
         if self._distance(self.calculated_position, self.coordinates) < math.pow(
             10, -self.threshold_precision
@@ -76,15 +86,14 @@ class Robot:
         else:
             self.frozen = False
 
-        # sec = self._smallest_enclosing_circle()
-        # pos_str = f"({float(self.calculated_position[0]):.6f}, {float(self.calculated_position[1]):.6f})"
-        # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
-        # logger.info(f"[{time:.6f}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
-
     def _compute(self, algo, check_terminal) -> Coordinates:
-        coord = algo()
+        # extra args that check_terminal might need
+        coord, extra_args = algo()
 
-        if check_terminal(coord) == True:
+        if check_terminal == None:
+            raise Exception("Algorithm termination function not passed in")
+
+        if check_terminal(coord, extra_args) == True:
             self.terminated = True
 
         return coord
@@ -145,7 +154,7 @@ class Robot:
     def _robot_is_visible(self, coord: Coordinates):
         return True
 
-    def _midpoint(self) -> Coordinates:
+    def _midpoint(self) -> tuple[Coordinates, list[any]]:
         x = y = 0
         for _, value in self.snapshot.items():
             x += value.pos.x
@@ -154,57 +163,91 @@ class Robot:
         x = x / len(self.snapshot)
         y = y / len(self.snapshot)
 
-        return Coordinates(x, y)
+        return (Coordinates(x, y), [])
 
-    def _midpoint_terminal(self, coord) -> bool:
+    def _midpoint_terminal(self, coord: Coordinates, args=None) -> bool:
+
         num_robots = len(self.snapshot.keys())
-        for i in range(num_robots - 1):
+        for i in range(num_robots):
             if self._distance(self.snapshot[i].pos, coord) > math.pow(
                 10, -self.threshold_precision
             ):
                 return False
         return True
 
-    def _smallest_enclosing_circle(self) -> Coordinates:
+    def _smallest_enclosing_circle(self) -> tuple[Coordinates, list[Circle]]:
         num_robots = len(self.snapshot)
         destination: Coordinates | None = None
+        sec: Circle | None = None
         if num_robots == 0:
             destination = (0, 0)
         if num_robots == 1:
             destination = self.snapshot[0].pos
         else:
-            sec: Circle = self._sec(num_robots)
+            sec = self._sec(num_robots)
             destination = self._closest_point_on_circle(sec, self.coordinates)
 
-        return destination
+        return (destination, [sec])
+
+    def _sec_terminal(self, _, args: list[Circle]) -> bool:
+        num_robots = len(self.snapshot.keys())
+        circle = args[0]
+
+        if circle == None:
+            return True
+
+        for i in range(num_robots):
+            if not self._is_point_on_circle(self.snapshot[i].pos, circle):
+                return False
+        return True
 
     def _sec(self, num_robots: int) -> Circle:
         """Returns smallest enclosing circle given number of robots in the form of
         (Center, Radius)"""
 
-        sec: Circle = ((0, 0), 10**18)
-        for i in range(num_robots):
+        sec: Circle = Circle((0, 0), -1)
+        for i in range(num_robots - 1):
             for j in range(i + 1, num_robots):
                 a = self.snapshot[i].pos
                 b = self.snapshot[j].pos
                 circle = self._circle_from_two(a, b)
-                radius1 = circle[1]
-                radius2 = sec[1]
-                if radius1 < radius2 and self._valid_circle(circle):
+                currRadius = circle.radius
+                maxRadius = sec.radius
+                if currRadius > maxRadius:
                     sec = circle
 
-        for i in range(num_robots):
-            for j in range(i + 1, num_robots):
+        for i in range(num_robots - 2):
+            for j in range(i + 1, num_robots - 1):
                 for k in range(j + 1, num_robots):
                     a = self.snapshot[i].pos
                     b = self.snapshot[j].pos
                     c = self.snapshot[k].pos
-                    circle = self._circle_from_three(a, b, c)
-                    radius1 = circle[1]
-                    radius2 = sec[1]
-                    if radius1 < radius2 and self._valid_circle(circle):
-                        sec = circle
+
+                    if self.is_acute_triangle(a, b, c):
+                        circle = self._circle_from_three(a, b, c)
+                        currRadius = circle.radius
+                        maxRadius = sec.radius
+                        if currRadius > maxRadius:
+                            sec = circle
         return sec
+
+    def is_acute_triangle(self, a: Coordinates, b: Coordinates, c: Coordinates) -> bool:
+        # Calculate squared lengths of each side
+        ab_sq = (a.x - b.x) ** 2 + (a.y - b.y) ** 2
+        bc_sq = (b.x - c.x) ** 2 + (b.y - c.y) ** 2
+        ca_sq = (c.x - a.x) ** 2 + (c.y - a.y) ** 2
+
+        # Check for the acute triangle condition
+        return (
+            (ab_sq + bc_sq > ca_sq)
+            and (ab_sq + ca_sq > bc_sq)
+            and (bc_sq + ca_sq > ab_sq)
+        )
+
+    def _is_point_on_circle(self, p: Coordinates, c: Circle) -> bool:
+        distance = math.sqrt((p.x - c.center.x) ** 2 + (p.y - c.center.y) ** 2)
+
+        return abs(distance - c.radius) < math.pow(10, -self.threshold_precision)
 
     def _closest_point_on_circle(
         self, circle: Circle, point: Coordinates
@@ -231,10 +274,15 @@ class Robot:
         """Returns False if at least one point does not lie within given circle"""
 
         # Iterate through all coordinates
-        for _, coord in self.snapshot.items():
+        for _, value in self.snapshot.items():
             # If point does not lie inside of the given circle; i.e.: if
             # distance between the center coord and point is more than radius
-            if self._distance(circle.center, coord[0]) > circle.radius:
+            if (
+                math.round(
+                    self._distance(circle.center, value.pos), self.threshold_precision
+                )
+                > circle.radius
+            ):
                 return False
         return True
 
@@ -250,11 +298,31 @@ class Robot:
     ) -> Circle:
         """Returns circle intersecting three points"""
 
-        center = self._circle_center(b.x - a.x, b.y - a.y, c.x - a.x, c.y - a.y)
+        # Calculate the midpoints of lines AB and AC
+        D = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y))
 
-        translated_center = Coordinates(center.x + a.x, center.y + a.y)
+        if D == 0:
+            raise ValueError(
+                "Points are collinear; no unique circle can pass through all three points."
+            )
 
-        return Circle(translated_center, self._distance(center, a))
+        # Calculate circle center coordinates
+        ux = (
+            (a.x**2 + a.y**2) * (b.y - c.y)
+            + (b.x**2 + b.y**2) * (c.y - a.y)
+            + (c.x**2 + c.y**2) * (a.y - b.y)
+        ) / D
+        uy = (
+            (a.x**2 + a.y**2) * (c.x - b.x)
+            + (b.x**2 + b.y**2) * (a.x - c.x)
+            + (c.x**2 + c.y**2) * (b.x - a.x)
+        ) / D
+        center = Coordinates(ux, uy)
+
+        # Calculate the radius as the distance from the center to any of the three points
+        radius = math.sqrt((center.x - a.x) ** 2 + (center.y - a.y) ** 2)
+
+        return Circle(center, radius)
 
     def _circle_center(self, bx: float, by: float, cx: float, cy: float) -> Coordinates:
         b = bx * bx + by * by
@@ -262,7 +330,7 @@ class Robot:
         d = bx * cy - by * cx
         if d == 0:
             return Coordinates(0, 0)
-        return Coordinates((cy * b - by * c) // (2 * d), (bx * c - cx * b) // (2 * d))
+        return Coordinates((cy * b - by * c) / (2 * d), (bx * c - cx * b) / (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
         distance = math.dist(a, b)
@@ -276,7 +344,7 @@ class Robot:
         result = ""
         for key, value in snapshot.items():
             frozen = "*" if value.frozen == True else ""
-            terminated = "#" if value.frozen == True else ""
+            terminated = "#" if value.terminated == True else ""
             result += f"\n\t{key}{frozen}{terminated}: {value[1]} - ({float(value.pos.x),float(value.pos.y)})"
 
         return result

@@ -13,6 +13,9 @@ class Coordinates(NamedTuple):
     x: float
     y: float
 
+    def __str__(self):
+        return f"({float(self.x)}, {float(self.y)})"
+
 
 class Circle(NamedTuple):
     """
@@ -22,6 +25,9 @@ class Circle(NamedTuple):
 
     center: Coordinates
     radius: float
+
+    def __str__(self):
+        return f"Center: {self.center} ; radius: {float(self.radius)}"
 
 
 class SnapshotDetails(NamedTuple):
