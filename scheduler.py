@@ -49,7 +49,7 @@ class Scheduler:
         self.lambda_rate = labmda_rate  # Average number of events per time unit
         self.robots: list[Robot] = []
 
-        if isinstance(robot_speeds, float):
+        if isinstance(robot_speeds, float) or isinstance(robot_speeds, int):
             robot_speeds_list = [robot_speeds] * num_of_robots
 
         for i in range(num_of_robots):

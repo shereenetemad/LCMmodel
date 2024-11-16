@@ -119,18 +119,7 @@ const ROBOT_SIZE = 8;
 
 // Elements
 let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
-let pausePlayBtn = /** @type {HTMLButtonElement} */ (
-  document.getElementById("pause-play-btn")
-);
-
 let ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
-
-// Global variables
-/** @type {number} */
-let window_height = window.innerHeight;
-
-/** @type {number} */
-let window_width = window.innerWidth;
 
 /** @type {Object.<number, Robot>}*/
 let robots = {};
@@ -141,13 +130,10 @@ let timePerFrameMs = 17;
 let lastFrameTime = 0;
 let stopAnimation = false;
 
-pausePlayBtn.addEventListener("click", togglePausePlay);
 resizeCanvas();
 
 //@ts-ignore
 const socket = io(window.location.host);
-
-socket.emit("start_simulation", {});
 
 socket.on("simulation_data", function (data) {
   startDrawingLoop();
@@ -158,6 +144,92 @@ socket.on("simulation_data", function (data) {
 socket.on("simulation_end", function (message) {
   console.log("Simulation complete.");
 });
+
+const configOptions = {
+  number_of_robots: 3,
+  user_robots: false,
+  robot_speeds: 1.0,
+  scheduler_type: "Async",
+  probability_distribution: "Exponential",
+  visibility_radius: 100,
+  robot_orientations: null,
+  multiplicity_detection: false,
+  robot_colors: "#000000",
+  obstructed_visibility: false,
+  rigid_movement: true,
+  time_precision: 4,
+  threshold_precision: 5,
+  sampling_rate: 0.2,
+  labmda_rate: 10,
+};
+
+const schedulerTypes = {
+  Async: "Async",
+  Sync: "Sync",
+};
+
+const probabilityDistributions = {
+  Exponential: "Exponential",
+  Gaussian: "Gaussian",
+};
+
+const startSimulation = {
+  start_simulation: () => {
+    socket.emit("start_simulation", configOptions);
+  },
+};
+
+const togglePause = {
+  pause_simulation: () => {
+    paused = true;
+  },
+  play_simulation: () => {
+    paused = false;
+  },
+};
+
+const gui = setupOptions(configOptions);
+
+function setupOptions(configOptions) {
+  //@ts-ignore
+  const gui = new dat.GUI();
+
+  gui.add(configOptions, "number_of_robots");
+  gui.add(configOptions, "user_robots");
+  gui.add(configOptions, "rigid_movement");
+  gui.add(configOptions, "multiplicity_detection");
+  gui.add(configOptions, "obstructed_visibility");
+  gui.add(configOptions, "robot_speeds", 0.1, 10, 0.1);
+  gui.add(configOptions, "scheduler_type", schedulerTypes);
+  gui.add(configOptions, "probability_distribution", probabilityDistributions);
+  gui.add(configOptions, "visibility_radius");
+  gui.add(configOptions, "time_precision");
+  gui.add(configOptions, "threshold_precision");
+  gui.add(configOptions, "sampling_rate");
+  gui.add(configOptions, "labmda_rate");
+  gui.add(startSimulation, "start_simulation");
+
+  const pauseController = gui
+    .add(togglePause, "pause_simulation")
+    .name("Pause")
+    .onFinishChange(changeText);
+
+  function changeText() {
+    if (paused) {
+      pauseController.name("Play");
+      pauseController.property = "play_simulation";
+    } else {
+      pauseController.name("Pause");
+      pauseController.property = "pause_simulation";
+    }
+  }
+
+  function updateConfig() {
+    configOptions = { ...configOptions };
+  }
+
+  return gui;
+}
 
 function startDrawingLoop() {
   // requestAnimationFrame initiates the animation loop
@@ -197,9 +269,6 @@ function clearCanvas() {
   ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 }
 
-let robot = new Robot(0, 0, "1", "red", 1);
-robot.draw(ctx);
-
 function getRandomColor() {
   const r = Math.floor(50 + Math.random() * 256);
   const g = Math.floor(50 + Math.random() * 256);
@@ -211,10 +280,9 @@ function getRandomColor() {
 function resizeCanvas() {
   // This function resets the canvas
   console.log("Resized Canvas");
-  window_height = window.innerHeight;
-  window_width = window.innerWidth;
-  canvas.width = window_width;
-  canvas.height = window_height;
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
   // Translate the coordinate system to be in the center
   ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -239,14 +307,4 @@ function updateTimeElement(time) {
   const timeElem = /** @type {HTMLElement}*/ (document.getElementById("time-value"));
 
   timeElem.innerText = time;
-}
-
-function togglePausePlay() {
-  paused = !paused;
-
-  if (paused) {
-    pausePlayBtn.innerText = "Play";
-  } else {
-    pausePlayBtn.innerText = "Pause";
-  }
 }

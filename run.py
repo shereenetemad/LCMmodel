@@ -80,12 +80,12 @@ def handle_simulation_request(data):
         seed=seed,
         num_of_robots=num_of_robots,
         initial_positions=initial_positions,
-        robot_speeds=config["robot_speeds"],
-        rigid_movement=config["rigid_movement"],
-        time_precision=config["time_precision"],
-        threshold_precision=config["threshold_precision"],
-        sampling_rate=config["sampling_rate"],
-        labmda_rate=config["labmda_rate"],
+        robot_speeds=data["robot_speeds"],
+        rigid_movement=data["rigid_movement"],
+        time_precision=data["time_precision"],
+        threshold_precision=data["threshold_precision"],
+        sampling_rate=data["sampling_rate"],
+        labmda_rate=data["labmda_rate"],
     )
 
     def run_simulation():
