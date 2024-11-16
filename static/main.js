@@ -161,6 +161,7 @@ const configOptions = {
   threshold_precision: 5,
   sampling_rate: 0.2,
   labmda_rate: 10,
+  algorithm: "Gathering",
 };
 
 const schedulerTypes = {
@@ -171,6 +172,11 @@ const schedulerTypes = {
 const probabilityDistributions = {
   Exponential: "Exponential",
   Gaussian: "Gaussian",
+};
+
+const algorithmOptions = {
+  Gathering: "Gathering",
+  SEC: "Smallest Enclosing Circle",
 };
 
 const startSimulation = {
@@ -207,6 +213,7 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "threshold_precision");
   gui.add(configOptions, "sampling_rate");
   gui.add(configOptions, "labmda_rate");
+  gui.add(configOptions, "algorithm", algorithmOptions).name("Algorithm");
   gui.add(startSimulation, "start_simulation");
 
   const pauseController = gui

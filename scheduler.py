@@ -17,6 +17,7 @@ class Scheduler:
         num_of_robots: int,
         initial_positions: list[float] | None,
         robot_speeds: float | list[float],
+        algorithm: str = Algorithm.GATHERING,
         visibility_radius: float | list[float] | None = None,
         robot_orientations: list[Orientation] | None = None,
         robot_colors: list[str] | None = None,
@@ -58,6 +59,7 @@ class Scheduler:
                 coordinates=Coordinates(*initial_positions[i]),
                 threshold_precision=threshold_precision,
                 speed=robot_speeds_list[i],
+                algorithm=algorithm,
             )
             self.robots.append(new_robot)
 

@@ -22,3 +22,8 @@ class SchedulerType(Enum):
 
 class DistributionType(Enum):
     GAUSSIAN = "gaussian"
+
+
+class Algorithm(Enum):
+    GATHERING = "Gathering"
+    SEC = "Smallest Enclosing Circle"

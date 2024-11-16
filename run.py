@@ -53,6 +53,7 @@ def handle_simulation_request(data):
         threshold_precision=data["threshold_precision"],
         sampling_rate=data["sampling_rate"],
         labmda_rate=data["labmda_rate"],
+        algorithm=data["algorithm"],
     )
 
     def run_simulation():

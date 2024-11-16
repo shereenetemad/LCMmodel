@@ -1,4 +1,4 @@
-from enums import RobotState
+from enums import RobotState, Algorithm
 from type_defs import *
 import math
 import logging
@@ -11,6 +11,7 @@ class Robot:
         self,
         id: int,
         coordinates: Coordinates,
+        algorithm: str,
         speed: float = 1.0,
         color: str | None = None,
         visibility_radius: float | None = None,
@@ -42,6 +43,12 @@ class Robot:
         self.frozen = False  # true if we skipped move step
         self.terminated = False
 
+        match algorithm:
+            case "Gathering":
+                self.algorithm = Algorithm.GATHERING
+            case "Smallest Enclosing Circle":
+                self.algorithm = Algorithm.SEC
+
     def look(
         self,
         snapshot: dict[Id, SnapshotDetails],
@@ -61,22 +68,10 @@ class Robot:
             f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
         )
 
-        # self.calculated_position = self._compute(
-        #     self._midpoint, self._midpoint_terminal
-        # )
-        # pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
-        # logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
-
-        self.calculated_position = self._compute(
-            self._smallest_enclosing_circle, self._sec_terminal
-        )
-
-        dest, args = self._smallest_enclosing_circle()
-        sec = args[0]
-        logger.info(
-            f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {self.calculated_position}"
-        )
-        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed SEC: {sec}")
+        algo, algo_terminal = self._select_algorithm()
+        self.calculated_position = self._compute(algo, algo_terminal)
+        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
 
         if self._distance(self.calculated_position, self.coordinates) < math.pow(
             10, -self.threshold_precision
@@ -140,6 +135,13 @@ class Robot:
             )
 
         return self.coordinates
+
+    def _select_algorithm(self):
+        match self.algorithm:
+            case Algorithm.GATHERING:
+                return (self._midpoint, self._midpoint_terminal)
+            case Algorithm.SEC:
+                return (self._smallest_enclosing_circle, self._sec_terminal)
 
     def _interpolate(
         self, start: Coordinates, end: Coordinates, t: float
