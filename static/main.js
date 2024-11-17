@@ -1,121 +1,4 @@
-class Queue {
-  /**
-   * @typedef {{value: any, next: QueueNode | undefined}} QueueNode
-   */
-
-  constructor() {
-    /** @type {QueueNode | undefined} */
-    this.head = undefined;
-
-    /** @type {QueueNode | undefined} */
-    this.tail = undefined;
-    this.size = 0;
-  }
-
-  enqueue(value) {
-    /** @type {QueueNode} */
-    const newNode = {
-      value,
-      next: undefined,
-    };
-
-    if (this.tail) {
-      this.tail.next = newNode;
-    } else {
-      this.head = newNode;
-    }
-    this.tail = newNode;
-
-    this.size++;
-  }
-
-  dequeue() {
-    if (!this.head) {
-      return undefined;
-    }
-
-    /** @type {QueueNode} */
-    const value = this.head.value;
-    this.head = this.head.next;
-
-    if (!this.head) {
-      this.tail = undefined;
-    }
-
-    this.size--;
-    return value;
-  }
-
-  peek() {
-    return this.head ? this.head.value : undefined;
-  }
-}
-
-class Robot {
-  /**
-   * Represents a robot
-   * @constructor
-   * @param {number} x - X position
-   * @param {number} y - Y position
-   * @param {string} id - Robot's id
-   * @param {string} color - Robot's color
-   * @param {number} speed - Robot's speed
-   */
-  constructor(x, y, id, color, speed) {
-    /** @type {number} */ this.x = x;
-    /** @type {number} */ this.y = y;
-    /** @type {string} */ this.id = id;
-    /** @type {string} */ this.color = color;
-    /** @type {number} */ this.speed = speed;
-    /** @type {number} */ this.radius = ROBOT_SIZE;
-  }
-
-  /**
-   * Draws a Robot on the canvas
-   * @param {CanvasRenderingContext2D} ctx - Canvas context
-   */
-  draw(ctx) {
-    ctx.beginPath();
-
-    // Draw circle
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.strokeStyle = this.color;
-    ctx.fill();
-    ctx.stroke();
-    ctx.closePath();
-
-    // // Draw node label
-    ctx.beginPath();
-    ctx.strokeStyle = "#FFF";
-    ctx.strokeText(this.id, this.x, this.y);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "9px Arial";
-    ctx.fill();
-    ctx.stroke();
-    ctx.closePath();
-  }
-
-  /**
-   * @param {number} x - New X position
-   * @param {number} y - New Y position
-   */
-  updatePosition(x, y) {
-    this.x = x * 10;
-    this.y = y * 10;
-  }
-
-  update() {
-    clearCanvas();
-    this.draw(ctx);
-  }
-}
-
 window.addEventListener("resize", resizeCanvas);
-
-// Constants
-const ROBOT_SIZE = 8;
 
 // Elements
 let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
@@ -181,6 +64,9 @@ const algorithmOptions = {
 
 const startSimulation = {
   start_simulation: () => {
+    snapshotQueue = new Queue();
+    paused = false;
+    gui.updatePauseText();
     socket.emit("start_simulation", configOptions);
   },
 };
@@ -193,6 +79,34 @@ const togglePause = {
     paused = false;
   },
 };
+
+/**
+ * Draws a Robot on the canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Robot} robot
+ */
+function drawRobot(ctx, robot) {
+  ctx.beginPath();
+
+  // Draw circle
+  ctx.arc(robot.x, robot.y, robot.radius, 0, Math.PI * 2);
+  ctx.fillStyle = robot.color;
+  ctx.strokeStyle = robot.color;
+  ctx.fill();
+  ctx.stroke();
+  ctx.closePath();
+
+  // // Draw node label
+  ctx.beginPath();
+  ctx.strokeStyle = "#FFF";
+  ctx.strokeText(robot.id, robot.x, robot.y);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "9px Arial";
+  ctx.fill();
+  ctx.stroke();
+  ctx.closePath();
+}
 
 const gui = setupOptions(configOptions);
 
@@ -219,9 +133,9 @@ function setupOptions(configOptions) {
   const pauseController = gui
     .add(togglePause, "pause_simulation")
     .name("Pause")
-    .onFinishChange(changeText);
+    .onFinishChange(updatePauseText);
 
-  function changeText() {
+  function updatePauseText() {
     if (paused) {
       pauseController.name("Play");
       pauseController.property = "play_simulation";
@@ -235,7 +149,7 @@ function setupOptions(configOptions) {
     configOptions = { ...configOptions };
   }
 
-  return gui;
+  return { gui, updatePauseText };
 }
 
 function startDrawingLoop() {
@@ -300,13 +214,13 @@ function drawSnapshot(snapshot) {
   updateTimeElement(time);
   let robotsHistory = snapshot[1];
   for (let id in robotsHistory) {
+    let [x, y] = robotsHistory[id][0];
     if (robots[id] === undefined) {
-      robots[id] = new Robot(0, 0, id, "black", 1);
+      robots[id] = new Robot(x, y, id, "black", 1);
     }
 
-    let [x, y] = robotsHistory[id][0];
     robots[id].updatePosition(x, y);
-    robots[id].draw(ctx);
+    drawRobot(ctx, robots[id]);
   }
 }
 
