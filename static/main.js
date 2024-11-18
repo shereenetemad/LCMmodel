@@ -138,10 +138,10 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "robot_speeds", 0.1, 10, 0.1);
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
-  gui.add(configOptions, "visibility_radius");
-  gui.add(configOptions, "time_precision");
-  gui.add(configOptions, "threshold_precision");
-  gui.add(configOptions, "sampling_rate");
+  gui.add(configOptions, "visibility_radius", 1, 100, 1);
+  gui.add(configOptions, "time_precision", 1, 10, 1);
+  gui.add(configOptions, "threshold_precision", 1, 10, 1);
+  gui.add(configOptions, "sampling_rate", 0.01, 0.5, 0.01);
   gui.add(configOptions, "labmda_rate");
   gui.add(configOptions, "algorithm", algorithmOptions).name("Algorithm");
   gui.add(configOptions, "random_seed", 1, 2 ** 32 - 1, 1).name("Seed");

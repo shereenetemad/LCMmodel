@@ -34,6 +34,7 @@ socketio = SocketIO(app)
 # WebSocket event handler for the simulation
 @socketio.on("start_simulation")
 def handle_simulation_request(data):
+    clear_log()
     seed = data["random_seed"]
     generator = np.random.default_rng(seed=seed)
     num_of_robots = data["num_of_robots"]
