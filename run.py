@@ -30,19 +30,23 @@ log.setLevel(logging.ERROR)  # Set Flask's logging to a different level or disab
 app = Flask(__name__, static_folder="static")
 socketio = SocketIO(app)
 
-seed = np.random.default_rng().integers(0, 2**32 - 1)
-generator = np.random.default_rng(seed=seed)
-
-# num_of_robots = config["number_of_robots"]
-# initial_positions = config["initial_positions"]
-
-num_of_robots = 10
-initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
-
 
 # WebSocket event handler for the simulation
 @socketio.on("start_simulation")
 def handle_simulation_request(data):
+    seed = data["random_seed"]
+    generator = np.random.default_rng(seed=seed)
+    num_of_robots = data["num_of_robots"]
+    initial_positions: list = data["initial_positions"]
+
+    if len(initial_positions) != 0:
+        # User defined
+        initial_positions = data["initial_positions"]
+        num_of_robots = len(initial_positions)
+    else:
+        # Random
+        initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
+
     scheduler = Scheduler(
         seed=seed,
         num_of_robots=num_of_robots,

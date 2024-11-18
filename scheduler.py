@@ -15,7 +15,7 @@ class Scheduler:
         self,
         seed: int,
         num_of_robots: int,
-        initial_positions: list[float] | None,
+        initial_positions: list[list[float]] | None,
         robot_speeds: float | list[float],
         algorithm: str = Algorithm.GATHERING,
         visibility_radius: float | list[float] | None = None,

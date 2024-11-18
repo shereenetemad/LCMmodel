@@ -10,22 +10,37 @@ class Robot {
    * @param {string} id - Robot's id
    * @param {string} color - Robot's color
    * @param {number} speed - Robot's speed
+   * @param {boolean} isCanvasCoordinates -
    */
-  constructor(x, y, id, color, speed) {
-    /** @type {number} */ this.x = x * Robot.ROBOT_POS_FACTOR;
-    /** @type {number} */ this.y = y * Robot.ROBOT_POS_FACTOR;
+  constructor(x, y, id, color, speed, isCanvasCoordinates = false) {
+    /** @type {number} */ this.x = x;
+    /** @type {number} */ this.y = y;
     /** @type {string} */ this.id = id;
     /** @type {string} */ this.color = color;
     /** @type {number} */ this.speed = speed;
     /** @type {number} */ this.radius = Robot.ROBOT_SIZE;
+
+    /** @type {boolean} */ this.isCanvasCoordinates = isCanvasCoordinates;
   }
 
-  /**
-   * @param {number} x - New X position
-   * @param {number} y - New Y position
-   */
-  updatePosition(x, y) {
-    this.x = x * Robot.ROBOT_POS_FACTOR;
-    this.y = y * Robot.ROBOT_POS_FACTOR;
+  setPosition(x, y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  getCanvasPosition() {
+    if (this.isCanvasCoordinates == true) {
+      return [this.x, this.y];
+    }
+
+    return [this.x * Robot.ROBOT_POS_FACTOR, -1 * this.y * Robot.ROBOT_POS_FACTOR];
+  }
+
+  getPosition() {
+    if (this.isCanvasCoordinates == true) {
+      return [this.x / Robot.ROBOT_POS_FACTOR, (-1 * this.y) / Robot.ROBOT_POS_FACTOR];
+    }
+
+    return [this.x, this.y];
   }
 }
