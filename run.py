@@ -30,10 +30,15 @@ log.setLevel(logging.ERROR)  # Set Flask's logging to a different level or disab
 app = Flask(__name__, static_folder="static")
 socketio = SocketIO(app)
 
+simulation_thread = None
+terminate_flag = False
+
 
 # WebSocket event handler for the simulation
 @socketio.on("start_simulation")
 def handle_simulation_request(data):
+    global simulation_thread, terminate_flag
+
     clear_log()
     seed = data["random_seed"]
     generator = np.random.default_rng(seed=seed)
@@ -62,8 +67,10 @@ def handle_simulation_request(data):
     )
 
     def run_simulation():
+        global terminate_flag
+
         with app.app_context():
-            while True:
+            while terminate_flag != True:
                 exit_code = scheduler.handle_event()
                 if exit_code == 0:
                     snapshots = scheduler.visualization_snapshots
@@ -78,8 +85,17 @@ def handle_simulation_request(data):
                     socketio.emit("simulation_end", "END")
                     break
 
+    # Terminate existing simulation thread
+    if simulation_thread and simulation_thread.is_alive():
+        logging.info("Terminating existing simulation thread.")
+        terminate_flag = True
+        simulation_thread.join()
+
+    # Reset the termination flag and start a new simulation thread
+    terminate_flag = False
     # Start a thread for the simulation to not block websocket
-    threading.Thread(target=run_simulation).start()
+    simulation_thread = threading.Thread(target=run_simulation)
+    simulation_thread.start()
 
 
 @socketio.on("connect")
