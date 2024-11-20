@@ -1,5 +1,5 @@
 class Robot {
-  static ROBOT_SIZE = 8;
+  static ROBOT_SIZE = 10;
   static ROBOT_POS_FACTOR = 10;
 
   /**
@@ -18,11 +18,14 @@ class Robot {
     /** @type {string} */ this.id = id;
     /** @type {string} */ this.color = color;
     /** @type {number} */ this.speed = speed;
-    /** @type {number} */ this.radius = Robot.ROBOT_SIZE;
 
     /** @type {boolean} */ this.isCanvasCoordinates = isCanvasCoordinates;
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
   setPosition(x, y) {
     this.x = x;
     this.y = y;
@@ -42,5 +45,9 @@ class Robot {
     }
 
     return [this.x, this.y];
+  }
+
+  static setRobotSize(size) {
+    Robot.ROBOT_SIZE = size;
   }
 }

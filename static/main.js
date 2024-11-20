@@ -76,6 +76,7 @@ const configOptions = {
   initialization_method: "Random",
   /** @type {Array}*/ initial_positions: [],
   robot_speeds: 1.0,
+  robot_size: Robot.ROBOT_SIZE,
   scheduler_type: "Async",
   probability_distribution: "Exponential",
   visibility_radius: 100,
@@ -102,7 +103,7 @@ function drawRobot(ctx, robot) {
 
   // Draw circle
   const [x, y] = robot.getCanvasPosition();
-  ctx.arc(x, y, robot.radius, 0, Math.PI * 2);
+  ctx.arc(x, y, Robot.ROBOT_SIZE, 0, Math.PI * 2);
   ctx.fillStyle = robot.color;
   ctx.strokeStyle = robot.color;
   ctx.fill();
@@ -115,7 +116,7 @@ function drawRobot(ctx, robot) {
   ctx.strokeText(robot.id, x, y);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "9px Arial";
+  ctx.font = `${Robot.ROBOT_SIZE + 1}px Arial`;
   ctx.fill();
   ctx.stroke();
   ctx.closePath();
@@ -136,6 +137,9 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "multiplicity_detection");
   gui.add(configOptions, "obstructed_visibility");
   gui.add(configOptions, "robot_speeds", 0.1, 10, 0.1);
+  gui
+    .add(configOptions, "robot_size", Robot.ROBOT_SIZE, 15, 0.5)
+    .onFinishChange((size) => Robot.setRobotSize(size));
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
   gui.add(configOptions, "visibility_radius", 1, 100, 1);
