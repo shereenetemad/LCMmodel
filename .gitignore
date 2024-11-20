@@ -115,4 +115,4 @@ venv.bak/
 # pytype static type analyzer
 .pytype/
 
-log.txt
+logs/

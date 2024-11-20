@@ -3,7 +3,8 @@ from type_defs import *
 import math
 import logging
 
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger("app.robot")
 
 
 class Robot:

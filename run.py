@@ -1,7 +1,5 @@
 import json
 import socket
-from time import sleep
-from robot import Robot
 from scheduler import Scheduler
 import numpy as np
 import logging
@@ -10,15 +8,35 @@ import webbrowser
 import threading
 import json
 from flask_socketio import SocketIO, emit
+from datetime import datetime
+import os
 
 
-logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format="")
+def get_log_name():
+    date = datetime.now()
+    milliseconds = date.microsecond // 1000
+
+    return f"{date.year}-{date.month}-{date.day}-{date.hour}-{date.minute}-{date.second}-{milliseconds}.txt"
 
 
-def clear_log():
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    logging.basicConfig(level=logging.INFO, filename="log.txt", filemode="w", format="")
+def setup_parent_logger():
+    logger = logging.getLogger("app")
+    logger.setLevel(logging.INFO)
+
+    # Remove all existing file handlers
+    for handler in logger.handlers[:]:
+        if isinstance(handler, logging.FileHandler):
+            logger.removeHandler(handler)
+
+    # Add a new file handler
+    log_dir = "./logs/"
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, f"{get_log_name()}")
+
+    new_file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter("")
+    new_file_handler.setFormatter(formatter)
+    logger.addHandler(new_file_handler)
 
 
 # Disable Flask’s default logging to the root logger
@@ -39,7 +57,8 @@ terminate_flag = False
 def handle_simulation_request(data):
     global simulation_thread, terminate_flag
 
-    clear_log()
+    setup_parent_logger()
+
     seed = data["random_seed"]
     generator = np.random.default_rng(seed=seed)
     num_of_robots = data["num_of_robots"]
