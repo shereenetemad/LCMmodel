@@ -1,6 +1,6 @@
 class Robot {
   static ROBOT_SIZE = 10;
-  static ROBOT_POS_FACTOR = 10;
+  static ROBOT_POS_FACTOR = 1;
 
   /**
    * Represents a robot

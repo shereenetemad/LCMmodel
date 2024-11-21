@@ -39,6 +39,15 @@ def setup_parent_logger():
     logger.addHandler(new_file_handler)
 
 
+def generate_initial_positions(generator, width_bound, height_bound, n):
+    x_positions = generator.uniform(low=-width_bound, high=height_bound, size=(n,))
+    y_positions = generator.uniform(low=-height_bound, high=height_bound, size=(n,))
+
+    positions = np.column_stack((x_positions, y_positions))
+
+    return positions
+
+
 # Disable Flask’s default logging to the root logger
 log = logging.getLogger(
     "werkzeug"
@@ -70,7 +79,9 @@ def handle_simulation_request(data):
         num_of_robots = len(initial_positions)
     else:
         # Random
-        initial_positions = generator.uniform(low=-25, high=25, size=(num_of_robots, 2))
+        initial_positions = generate_initial_positions(
+            generator, data["width_bound"], data["height_bound"], num_of_robots
+        )
 
     scheduler = Scheduler(
         seed=seed,

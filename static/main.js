@@ -16,8 +16,6 @@ let lastFrameTime = 0;
 let stopAnimation = false;
 let currRobotId = 0;
 
-resizeCanvas();
-
 //@ts-ignore
 const socket = io(window.location.host);
 
@@ -91,7 +89,11 @@ const configOptions = {
   labmda_rate: 10,
   algorithm: "Gathering",
   random_seed: Math.floor(Math.random() * (2 ** 32 - 1)) + 1,
+  width_bound: canvas.width / 2,
+  height_bound: canvas.height / 2,
 };
+
+resizeCanvas();
 
 /**
  * Draws a Robot on the canvas
@@ -136,7 +138,7 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "rigid_movement");
   gui.add(configOptions, "multiplicity_detection");
   gui.add(configOptions, "obstructed_visibility");
-  gui.add(configOptions, "robot_speeds", 0.1, 10, 0.1);
+  gui.add(configOptions, "robot_speeds", 1, 10, 0.1);
   gui
     .add(configOptions, "robot_size", Robot.ROBOT_SIZE, 15, 0.5)
     .onFinishChange((size) => Robot.setRobotSize(size));
@@ -244,6 +246,8 @@ function resizeCanvas() {
 
   // Translate the coordinate system to be in the center
   ctx.translate(canvas.width / 2, canvas.height / 2);
+  configOptions.width_bound = canvas.width / 2;
+  configOptions.height_bound = canvas.height / 2;
 }
 
 function drawSnapshot(snapshot) {
