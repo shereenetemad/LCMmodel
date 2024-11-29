@@ -67,7 +67,7 @@ def handle_simulation_request(data):
 
     # Terminate existing simulation thread
     if simulation_thread and simulation_thread.is_alive():
-        logger.info("Terminating existing simulation thread.")
+        logger.info("Simulation Interrupted... (A new simulation was requested)")
         terminate_flag = True
         simulation_thread.join()
 
