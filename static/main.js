@@ -324,6 +324,8 @@ function clearSimulation() {
   currRobotId = 0;
   configOptions.initial_positions = [];
   simulationId = undefined;
+  paused = false;
+  gui.updatePauseText();
 }
 
 /**
