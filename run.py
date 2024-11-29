@@ -19,14 +19,9 @@ def get_log_name():
     return f"{date.year}-{date.month}-{date.day}-{date.hour}-{date.minute}-{date.second}-{milliseconds}.txt"
 
 
-def setup_parent_logger():
-    logger = logging.getLogger("app")
+def setup_logger(simulation_id):
+    logger = logging.getLogger(f"app_{simulation_id}")
     logger.setLevel(logging.INFO)
-
-    # Remove all existing file handlers
-    for handler in logger.handlers[:]:
-        if isinstance(handler, logging.FileHandler):
-            logger.removeHandler(handler)
 
     # Add a new file handler
     log_dir = "./logs/"
@@ -37,6 +32,8 @@ def setup_parent_logger():
     formatter = logging.Formatter("")
     new_file_handler.setFormatter(formatter)
     logger.addHandler(new_file_handler)
+
+    return logger
 
 
 def generate_initial_positions(generator, width_bound, height_bound, n):
@@ -59,14 +56,23 @@ socketio = SocketIO(app)
 
 simulation_thread = None
 terminate_flag = False
+simulation_id = 0
+logger = None
 
 
 # WebSocket event handler for the simulation
 @socketio.on("start_simulation")
 def handle_simulation_request(data):
-    global simulation_thread, terminate_flag
+    global simulation_thread, terminate_flag, logger
 
-    setup_parent_logger()
+    # Terminate existing simulation thread
+    if simulation_thread and simulation_thread.is_alive():
+        logger.info("Terminating existing simulation thread.")
+        terminate_flag = True
+        simulation_thread.join()
+
+    # Reset the termination flag and start a new simulation thread
+    terminate_flag = False
 
     seed = data["random_seed"]
     generator = np.random.default_rng(seed=seed)
@@ -83,7 +89,9 @@ def handle_simulation_request(data):
             generator, data["width_bound"], data["height_bound"], num_of_robots
         )
 
+    logger = setup_logger(simulation_id)
     scheduler = Scheduler(
+        logger=logger,
         seed=seed,
         num_of_robots=num_of_robots,
         initial_positions=initial_positions,
@@ -97,9 +105,12 @@ def handle_simulation_request(data):
     )
 
     def run_simulation():
-        global terminate_flag
+        global terminate_flag, simulation_id
+
+        simulation_id += 1
 
         with app.app_context():
+            socketio.emit("simulation_start", simulation_id)
             while terminate_flag != True:
                 exit_code = scheduler.handle_event()
                 if exit_code == 0:
@@ -107,7 +118,12 @@ def handle_simulation_request(data):
                     if len(snapshots) > 0:
                         socketio.emit(
                             "simulation_data",
-                            json.dumps(scheduler.visualization_snapshots[-1]),
+                            json.dumps(
+                                {
+                                    "simulation_id": simulation_id,
+                                    "snapshot": scheduler.visualization_snapshots[-1],
+                                }
+                            ),
                         )
 
                 if exit_code < 0:
@@ -115,14 +131,6 @@ def handle_simulation_request(data):
                     socketio.emit("simulation_end", "END")
                     break
 
-    # Terminate existing simulation thread
-    if simulation_thread and simulation_thread.is_alive():
-        logging.info("Terminating existing simulation thread.")
-        terminate_flag = True
-        simulation_thread.join()
-
-    # Reset the termination flag and start a new simulation thread
-    terminate_flag = False
     # Start a thread for the simulation to not block websocket
     simulation_thread = threading.Thread(target=run_simulation)
     simulation_thread.start()

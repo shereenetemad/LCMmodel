@@ -4,12 +4,12 @@ import math
 import logging
 
 
-logger = logging.getLogger("app.robot")
-
-
 class Robot:
+    _logger: logging.Logger | None = None
+
     def __init__(
         self,
+        logger: logging.Logger,
         id: int,
         coordinates: Coordinates,
         algorithm: str,
@@ -22,6 +22,7 @@ class Robot:
         rigid_movement: bool = False,
         threshold_precision: float = 5,
     ):
+        Robot._logger = logger
         self.speed = speed
         self.color = color
         self.visibility_radius = visibility_radius
@@ -65,14 +66,16 @@ class Robot:
                     transformed_pos, value.state, value.frozen, value.terminated
                 )
 
-        logger.info(
+        Robot._logger.info(
             f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
         )
 
         algo, algo_terminal = self._select_algorithm()
         self.calculated_position = self._compute(algo, algo_terminal)
         pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
-        logger.info(f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}")
+        Robot._logger.info(
+            f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}"
+        )
 
         if self._distance(self.calculated_position, self.coordinates) < math.pow(
             10, -self.threshold_precision
@@ -97,7 +100,7 @@ class Robot:
     def move(self, start_time: float) -> None:
         self.state = RobotState.MOVE
 
-        logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
+        Robot._logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
 
@@ -111,7 +114,7 @@ class Robot:
         self.travelled_distance += current_distance
 
         self.start_position = self.coordinates
-        logger.info(
+        Robot._logger.info(
             f"[{time}] {{R{self.id}}} WAIT    -- Distance: {current_distance} | Total Distance: {self.travelled_distance} units"
         )
 

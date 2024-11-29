@@ -6,13 +6,14 @@ import heapq
 import math
 import logging
 
-logger = logging.getLogger("app.scheduler")
-
 
 class Scheduler:
 
+    _logger: logging.Logger | None = None
+
     def __init__(
         self,
+        logger: logging.Logger,
         seed: int,
         num_of_robots: int,
         initial_positions: list[list[float]] | None,
@@ -31,6 +32,7 @@ class Scheduler:
         sampling_rate: float = 0.2,
         labmda_rate: float = 5,
     ):
+        Scheduler._logger = logger
         self.seed = seed
         self.terminate = False
         self.rigid_movement = rigid_movement
@@ -55,6 +57,7 @@ class Scheduler:
 
         for i in range(num_of_robots):
             new_robot = Robot(
+                logger=logger,
                 id=i,
                 coordinates=Coordinates(*initial_positions[i]),
                 threshold_precision=threshold_precision,
@@ -160,10 +163,10 @@ class Scheduler:
         poisson_numbers = generator.poisson(lambda_value, num_samples)
 
         # Display the generated numbers
-        logger.info(poisson_numbers)
+        Scheduler._logger.info(poisson_numbers)
 
     def initialize_queue_exponential(self) -> None:
-        logger.info(f"Seed used: {self.seed}")
+        Scheduler._logger.info(f"Seed used: {self.seed}")
 
         # Generate time intervals for n events
         self.generator = np.random.default_rng(seed=self.seed)
@@ -172,7 +175,7 @@ class Scheduler:
             scale=1 / self.lambda_rate, size=num_of_events
         ).round(self.time_precision)
 
-        logger.info(
+        Scheduler._logger.info(
             f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
         )
 

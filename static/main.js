@@ -15,18 +15,29 @@ let timePerFrameMs = 17;
 let lastFrameTime = 0;
 let stopAnimation = false;
 let currRobotId = 0;
+let simulationId = undefined;
 
 //@ts-ignore
 const socket = io(window.location.host);
 
 socket.on("simulation_data", function (data) {
-  startDrawingLoop();
   const _data = JSON.parse(data);
-  snapshotQueue.enqueue(_data);
+  if (simulationId === _data["simulation_id"]) {
+    startDrawingLoop();
+    snapshotQueue.enqueue(_data["snapshot"]);
+  } else {
+    console.log("Received data from mismatched simulation id:");
+    console.log(_data);
+  }
 });
 
-socket.on("simulation_end", function (message) {
-  // simulationRunning = false;
+socket.on("simulation_start", function (data) {
+  clearSimulation();
+  simulationId = data;
+  console.log(`Simulation start... ID: ${simulationId}`);
+});
+
+socket.on("simulation_end", function () {
   console.log("Simulation complete.");
 });
 
@@ -52,10 +63,6 @@ const initialPositionsOptions = {
 
 const startSimulation = {
   start_simulation: () => {
-    snapshotQueue = new Queue();
-    clearCanvas();
-    paused = false;
-    gui.updatePauseText();
     socket.emit("start_simulation", configOptions);
   },
 };
@@ -103,11 +110,13 @@ resizeCanvas();
 function drawRobot(ctx, robot) {
   ctx.beginPath();
 
+  const color = robot.getColor();
+
   // Draw circle
   const [x, y] = robot.getCanvasPosition();
   ctx.arc(x, y, Robot.ROBOT_SIZE, 0, Math.PI * 2);
-  ctx.fillStyle = robot.color;
-  ctx.strokeStyle = robot.color;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
   ctx.fill();
   ctx.stroke();
   ctx.closePath();
@@ -138,7 +147,7 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "rigid_movement");
   gui.add(configOptions, "multiplicity_detection");
   gui.add(configOptions, "obstructed_visibility");
-  gui.add(configOptions, "robot_speeds", 1, 10, 0.1);
+  gui.add(configOptions, "robot_speeds", 1, 20, 0.1);
   gui
     .add(configOptions, "robot_size", Robot.ROBOT_SIZE, 15, 0.5)
     .onFinishChange((size) => Robot.setRobotSize(size));
@@ -192,8 +201,9 @@ function setupOptions(configOptions) {
 }
 
 function startDrawingLoop() {
-  // requestAnimationFrame initiates the animation loop
   stopAnimation = false;
+
+  // requestAnimationFrame initiates the animation loop
   requestAnimationFrame(drawLoop); // Start the loop
 }
 
@@ -250,10 +260,15 @@ function resizeCanvas() {
   configOptions.height_bound = canvas.height / 2;
 }
 
+/**
+ * @param {Snapshot} snapshot
+ * */
 function drawSnapshot(snapshot) {
   let time = snapshot[0];
   updateTimeElement(time);
+
   let robotsHistory = snapshot[1];
+
   for (let id in robotsHistory) {
     let [x, y] = robotsHistory[id][0];
     if (robots[id] === undefined) {
@@ -261,6 +276,7 @@ function drawSnapshot(snapshot) {
     }
 
     robots[id].setPosition(x, y);
+    robots[id].setState(robotsHistory[id][1]);
     drawRobot(ctx, robots[id]);
   }
 }
@@ -307,6 +323,7 @@ function clearSimulation() {
   lastFrameTime = 0;
   currRobotId = 0;
   configOptions.initial_positions = [];
+  simulationId = undefined;
 }
 
 /**

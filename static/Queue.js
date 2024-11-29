@@ -1,8 +1,4 @@
 class Queue {
-  /**
-   * @typedef {{value: any, next: QueueNode | undefined}} QueueNode
-   */
-
   constructor() {
     /** @type {QueueNode | undefined} */
     this.head = undefined;
@@ -34,7 +30,7 @@ class Queue {
       return undefined;
     }
 
-    /** @type {QueueNode} */
+    /** @type {Snapshot} */
     const value = this.head.value;
     this.head = this.head.next;
 

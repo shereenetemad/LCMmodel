@@ -2,6 +2,13 @@ class Robot {
   static ROBOT_SIZE = 10;
   static ROBOT_POS_FACTOR = 1;
 
+  static STATE_COLOR_MAP = {
+    WAIT: "#E4A125", // yellow
+    COMPUTE: "#1A8FE3", // blue
+    MOVE: "#008148", // green
+    INACTIVE: "#000000",
+  };
+
   /**
    * Represents a robot
    * @constructor
@@ -20,6 +27,8 @@ class Robot {
     /** @type {number} */ this.speed = speed;
 
     /** @type {boolean} */ this.isCanvasCoordinates = isCanvasCoordinates;
+
+    /** @type {string} */ this.state = "INACTIVE";
   }
 
   /**
@@ -45,6 +54,14 @@ class Robot {
     }
 
     return [this.x, this.y];
+  }
+
+  setState(state) {
+    this.state = state;
+  }
+
+  getColor() {
+    return Robot.STATE_COLOR_MAP[this.state];
   }
 
   static setRobotSize(size) {
