@@ -12,3 +12,5 @@ type FrozenState = boolean;
 type TerminatedState = boolean;
 
 type QueueNode = { value: Snapshot; next: QueueNode | undefined };
+
+type Circle = [Coordinates, number];

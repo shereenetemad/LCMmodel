@@ -1,6 +1,7 @@
 class Robot {
   static ROBOT_SIZE = 10;
-  static ROBOT_POS_FACTOR = 1;
+  static ROBOT_X_POS_FACTOR = 1;
+  static ROBOT_Y_POS_FACTOR = -1;
 
   static STATE_COLOR_MAP = {
     WAIT: "#E4A125", // yellow
@@ -45,12 +46,12 @@ class Robot {
       return [this.x, this.y];
     }
 
-    return [this.x * Robot.ROBOT_POS_FACTOR, -1 * this.y * Robot.ROBOT_POS_FACTOR];
+    return [this.x * Robot.ROBOT_X_POS_FACTOR, this.y * Robot.ROBOT_Y_POS_FACTOR];
   }
 
   getPosition() {
     if (this.isCanvasCoordinates == true) {
-      return [this.x / Robot.ROBOT_POS_FACTOR, (-1 * this.y) / Robot.ROBOT_POS_FACTOR];
+      return [this.x / Robot.ROBOT_X_POS_FACTOR, this.y / Robot.ROBOT_Y_POS_FACTOR];
     }
 
     return [this.x, this.y];

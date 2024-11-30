@@ -16,6 +16,7 @@ let lastFrameTime = 0;
 let stopAnimation = false;
 let currRobotId = 0;
 let simulationId = undefined;
+let sec = undefined;
 
 //@ts-ignore
 const socket = io(window.location.host);
@@ -32,13 +33,19 @@ socket.on("simulation_data", function (data) {
 });
 
 socket.on("simulation_start", function (data) {
-  clearSimulation();
   simulationId = data;
   console.log(`Simulation start... ID: ${simulationId}`);
 });
 
 socket.on("simulation_end", function () {
   console.log("Simulation complete.");
+});
+
+socket.on("smallest_enclosing_circle", function (data) {
+  const _data = JSON.parse(data);
+  if (simulationId === _data["simulation_id"]) {
+    sec = _data["sec"];
+  }
 });
 
 const schedulerTypes = {
@@ -64,6 +71,7 @@ const initialPositionsOptions = {
 const startSimulation = {
   start_simulation: () => {
     socket.emit("start_simulation", configOptions);
+    clearSimulation();
   },
 };
 
@@ -119,7 +127,6 @@ function drawRobot(ctx, robot) {
   ctx.strokeStyle = color;
   ctx.fill();
   ctx.stroke();
-  ctx.closePath();
 
   // // Draw node label
   ctx.beginPath();
@@ -130,7 +137,27 @@ function drawRobot(ctx, robot) {
   ctx.font = `${Robot.ROBOT_SIZE + 1}px Arial`;
   ctx.fill();
   ctx.stroke();
-  ctx.closePath();
+}
+
+/**
+ * Draws smallest enclosing circle
+ * @param {Circle} c - Smallest Enclosing Circle
+ */
+function drawSEC(c) {
+  if (c === undefined) {
+    return;
+  }
+
+  const center_x = c[0][0] * Robot.ROBOT_X_POS_FACTOR;
+  const center_y = c[0][1] * -1 * Robot.ROBOT_X_POS_FACTOR;
+  const radius = c[1] * Robot.ROBOT_X_POS_FACTOR;
+  // ctx.strokeStyle = "rgba(169,169,169, 0.5)";
+  ctx.strokeStyle = "rgb(169 169 169 / 50%)";
+
+  ctx.beginPath();
+
+  ctx.arc(center_x, center_y, radius, 0, 2 * Math.PI);
+  ctx.stroke();
 }
 
 const gui = setupOptions(configOptions);
@@ -227,6 +254,8 @@ function drawLoop(currentTime) {
       lastFrameTime = currentTime; // Reset lastFrameTime for the next frame
     } else {
       stopDrawingLoop();
+      drawSEC(sec);
+
       return;
     }
   }
@@ -326,6 +355,7 @@ function clearSimulation() {
   simulationId = undefined;
   paused = false;
   gui.updatePauseText();
+  sec = undefined;
 }
 
 /**

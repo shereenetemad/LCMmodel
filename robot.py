@@ -1,5 +1,6 @@
 from enums import RobotState, Algorithm
 from type_defs import *
+from typing import Callable
 import math
 import logging
 
@@ -44,6 +45,7 @@ class Robot:
         self.threshold_precision = threshold_precision
         self.frozen = False  # true if we skipped move step
         self.terminated = False
+        self.sec = None  # Stores the calculated SEC
 
         match algorithm:
             case "Gathering":
@@ -85,7 +87,11 @@ class Robot:
         else:
             self.frozen = False
 
-    def _compute(self, algo, check_terminal) -> Coordinates:
+    def _compute(
+        self,
+        algo: Callable[[], tuple[Coordinates, list[any]]],
+        check_terminal: Callable[[Coordinates, list[any]], bool],
+    ) -> Coordinates:
         # extra args that check_terminal might need
         coord, extra_args = algo()
 
@@ -190,10 +196,10 @@ class Robot:
         if num_robots == 1:
             destination = self.snapshot[0].pos
         else:
-            sec = self._sec(num_robots)
-            destination = self._closest_point_on_circle(sec, self.coordinates)
+            self.sec = self._sec(num_robots)
 
-        return (destination, [sec])
+            destination = self._closest_point_on_circle(self.sec, self.coordinates)
+        return (destination, [self.sec])
 
     def _sec_terminal(self, _, args: list[Circle]) -> bool:
         num_robots = len(self.snapshot.keys())

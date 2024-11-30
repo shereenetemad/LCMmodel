@@ -1,5 +1,6 @@
 import json
 import socket
+from enums import Algorithm
 from scheduler import Scheduler
 import numpy as np
 import logging
@@ -128,6 +129,16 @@ def handle_simulation_request(data):
 
                 if exit_code < 0:
                     # Signal the end of the simulation
+                    if scheduler.robots[0].algorithm == Algorithm.SEC:
+                        socketio.emit(
+                            "smallest_enclosing_circle",
+                            json.dumps(
+                                {
+                                    "simulation_id": simulation_id,
+                                    "sec": scheduler.robots[0].sec,
+                                }
+                            ),
+                        )
                     socketio.emit("simulation_end", "END")
                     break
 
