@@ -26,4 +26,4 @@ class DistributionType(Enum):
 
 class Algorithm(Enum):
     GATHERING = "Gathering"
-    SEC = "Smallest Enclosing Circle"
+    SEC = "SEC"

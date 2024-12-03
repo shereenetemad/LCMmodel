@@ -50,7 +50,7 @@ class Robot:
         match algorithm:
             case "Gathering":
                 self.algorithm = Algorithm.GATHERING
-            case "Smallest Enclosing Circle":
+            case "SEC":
                 self.algorithm = Algorithm.SEC
 
     def look(

@@ -60,7 +60,7 @@ const probabilityDistributions = {
 
 const algorithmOptions = {
   Gathering: "Gathering",
-  SEC: "Smallest Enclosing Circle",
+  SEC: "SEC",
 };
 
 const initialPositionsOptions = {

@@ -20,12 +20,12 @@ def get_log_name():
     return f"{date.year}-{date.month}-{date.day}-{date.hour}-{date.minute}-{date.second}-{milliseconds}.txt"
 
 
-def setup_logger(simulation_id):
+def setup_logger(simulation_id, algo_name):
     logger = logging.getLogger(f"app_{simulation_id}")
     logger.setLevel(logging.INFO)
 
     # Add a new file handler
-    log_dir = "./logs/"
+    log_dir = f"./logs/{algo_name}/"
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, f"{get_log_name()}")
 
@@ -90,7 +90,7 @@ def handle_simulation_request(data):
             generator, data["width_bound"], data["height_bound"], num_of_robots
         )
 
-    logger = setup_logger(simulation_id)
+    logger = setup_logger(simulation_id, data["algorithm"])
     scheduler = Scheduler(
         logger=logger,
         seed=seed,
