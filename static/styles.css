@@ -46,3 +46,22 @@ body {
   font-size: 12px;
   user-select: none;
 }
+
+/* Overriding dat-gui styling */
+.dg * {
+  text-shadow: none !important;
+  border: none !important;
+}
+
+.start-btn {
+  background: #2ba92b !important;
+  text-align: center;
+}
+
+.start-btn:hover {
+  background: #238b23 !important;
+}
+
+.pause-btn {
+  text-align: center;
+}

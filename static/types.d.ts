@@ -3,6 +3,8 @@ type Snapshot = [
   Record<string, [Coordinates, State, FrozenState, TerminatedState]>
 ];
 
+type RobotMap = Record<string, Robot>;
+
 type Coordinates = [number, number];
 
 type State = string;

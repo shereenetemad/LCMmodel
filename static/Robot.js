@@ -5,7 +5,7 @@ class Robot {
 
   static STATE_COLOR_MAP = {
     WAIT: "#E4A125", // yellow
-    COMPUTE: "#1A8FE3", // blue
+    LOOK: "#1A8FE3", // blue
     MOVE: "#008148", // green
     INACTIVE: "#000000",
   };

@@ -6,7 +6,7 @@ let ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
 let time = /**@type {HTMLElement} */ (document.getElementById("time-value"));
 let message = /**@type {HTMLElement} */ (document.getElementById("message"));
 
-/** @type {Object.<number, Robot>}*/
+/** @type {RobotMap}*/
 let robots = {};
 let snapshotQueue = new Queue();
 
@@ -151,7 +151,6 @@ function drawSEC(c) {
   const center_x = c[0][0] * Robot.ROBOT_X_POS_FACTOR;
   const center_y = c[0][1] * -1 * Robot.ROBOT_X_POS_FACTOR;
   const radius = c[1] * Robot.ROBOT_X_POS_FACTOR;
-  // ctx.strokeStyle = "rgba(169,169,169, 0.5)";
   ctx.strokeStyle = "rgb(169 169 169 / 50%)";
 
   ctx.beginPath();
@@ -187,12 +186,18 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "labmda_rate");
   gui.add(configOptions, "algorithm", algorithmOptions).name("Algorithm");
   gui.add(configOptions, "random_seed", 1, 2 ** 32 - 1, 1).name("Seed");
-  gui.add(startSimulation, "start_simulation").name("Start simulation");
+  const startSimulationBtn = gui
+    .add(startSimulation, "start_simulation")
+    .name("Start simulation");
+
+  startSimulationBtn.domElement.parentElement.parentElement.classList.add("start-btn");
 
   const pauseController = gui
     .add(togglePause, "pause_simulation")
     .name("Pause")
     .onFinishChange(updatePauseText);
+
+  pauseController.domElement.parentElement.parentElement.classList.add("pause-btn");
 
   function updatePauseText() {
     if (paused) {
@@ -240,6 +245,10 @@ function stopDrawingLoop() {
 
 function drawLoop(currentTime) {
   if (stopAnimation) {
+    return;
+  }
+
+  if (simulationId === undefined) {
     return;
   }
   // Calculate the time since the last frame
@@ -347,12 +356,12 @@ function clearSimulation() {
   clearCanvas();
   updateTimeElement("");
 
-  robots = {};
+  simulationId = undefined;
   snapshotQueue = new Queue();
+  robots = {};
   lastFrameTime = 0;
   currRobotId = 0;
   configOptions.initial_positions = [];
-  simulationId = undefined;
   paused = false;
   gui.updatePauseText();
   sec = undefined;
