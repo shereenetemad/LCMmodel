@@ -275,6 +275,8 @@ function drawLoop(currentTime) {
 
 function clearCanvas() {
   ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(-canvas / 2, -canvas.height / 2, canvas.width, canvas.height);
 }
 
 function getRandomColor() {
@@ -291,6 +293,9 @@ function resizeCanvas() {
 
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Translate the coordinate system to be in the center
   ctx.translate(canvas.width / 2, canvas.height / 2);

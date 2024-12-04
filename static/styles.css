@@ -23,6 +23,7 @@ body {
 }
 
 #header {
+  z-index: 2;
   user-select: none;
 }
 
