@@ -74,12 +74,10 @@ class Scheduler:
         snapshot = {}
         for robot in self.robots:
             snapshot[robot.id] = SnapshotDetails(
-                robot.get_position(time),
-                robot.state,
-                robot.frozen,
-                robot.terminated,
+                robot.get_position(time), robot.state, robot.frozen, robot.terminated, 1
             )
 
+        self._detect_multiplicity(snapshot)  # in-place
         if visualization_snapshot:
             self.visualization_snapshots.append((time, snapshot))
         else:
@@ -197,3 +195,50 @@ class Scheduler:
 
     def _precise_time(self, x: float) -> float:
         return round(x, self.time_precision)
+
+    # Can be improved when it comes to precision/detection
+    def _detect_multiplicity(self, snapshot: dict[int, SnapshotDetails]):
+        positions = [(v.pos, k) for k, v in snapshot.items()]
+
+        positions.sort()
+
+        i = 0
+        multiplicity = 1
+        while i < len(positions):
+            multiplicity_group = [positions[i][1]]  # Start a new group
+            rounded_coordinates1 = round_coordinates(
+                positions[i][0], self.threshold_precision - 2
+            )
+
+            # Check for close positions
+            for j in range(i + 1, len(positions)):
+                rounded_coordinates2 = round_coordinates(
+                    positions[j][0], self.threshold_precision - 2
+                )
+
+                is_close = all(
+                    abs(rounded_coordinates1[x] - rounded_coordinates2[x])
+                    <= 10**-self.threshold_precision
+                    for x in range(2)
+                )
+
+                if is_close:
+                    multiplicity += 1
+                    multiplicity_group.append(positions[j][1])
+                else:
+                    break
+
+            # Update multiplicity for all robots in the group
+            for robot_id in multiplicity_group:
+                snapshot_details = list(snapshot[robot_id])
+                snapshot_details[4] = multiplicity
+                snapshot[robot_id] = SnapshotDetails(*snapshot_details)
+
+            # Move to the next group
+            i += len(multiplicity_group)
+            multiplicity = 1
+
+
+def round_coordinates(coord: Coordinates, precision: int):
+
+    return Coordinates(round(coord.x, precision), round(coord.y, precision))

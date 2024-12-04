@@ -65,7 +65,11 @@ class Robot:
             if self._robot_is_visible(value.pos):
                 transformed_pos = self._convert_coordinate(value.pos)
                 self.snapshot[key] = SnapshotDetails(
-                    transformed_pos, value.state, value.frozen, value.terminated
+                    transformed_pos,
+                    value.state,
+                    value.frozen,
+                    value.terminated,
+                    value.multiplicity,
                 )
 
         Robot._logger.info(
@@ -79,8 +83,9 @@ class Robot:
             f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}"
         )
 
-        if self._distance(self.calculated_position, self.coordinates) < math.pow(
-            10, -self.threshold_precision
+        if (
+            self._distance(self.calculated_position, self.coordinates)
+            < 10**-self.threshold_precision
         ):
             self.frozen = True
             self.wait(time)
@@ -136,7 +141,10 @@ class Robot:
         distance = math.dist(self.start_position, self.calculated_position)
         distance_covered = self.speed * time
 
-        if distance_covered > distance:
+        if (
+            distance_covered > distance
+            or abs(distance_covered - distance) < 10**-self.threshold_precision
+        ):
             self.coordinates = self.calculated_position
         else:
             factor = distance_covered / distance

@@ -36,12 +36,14 @@ class SnapshotDetails(NamedTuple):
     state: float \n
     frozen: bool \n
     terminated: bool \n
+    multiplicity: int | None \n
     """
 
     pos: Coordinates
     state: str
     frozen: bool
     terminated: bool
+    multiplicity: int | None
 
 
 class Event(NamedTuple):

@@ -18,14 +18,16 @@ class Robot {
    * @param {string} id - Robot's id
    * @param {string} color - Robot's color
    * @param {number} speed - Robot's speed
-   * @param {boolean} isCanvasCoordinates -
+   * @param {number} multiplicity - # of Robots at position
+   * @param {boolean} isCanvasCoordinates - flag to decide if coordinates are HTMLCanvas coordinates
    */
-  constructor(x, y, id, color, speed, isCanvasCoordinates = false) {
+  constructor(x, y, id, color, speed, multiplicity = 1, isCanvasCoordinates = false) {
     /** @type {number} */ this.x = x;
     /** @type {number} */ this.y = y;
     /** @type {string} */ this.id = id;
     /** @type {string} */ this.color = color;
     /** @type {number} */ this.speed = speed;
+    /** @type {number} */ this.multiplicity = multiplicity;
 
     /** @type {boolean} */ this.isCanvasCoordinates = isCanvasCoordinates;
 

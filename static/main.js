@@ -70,6 +70,13 @@ const initialPositionsOptions = {
 
 const startSimulation = {
   start_simulation: () => {
+    if (
+      configOptions.initialization_method === "User Defined" &&
+      configOptions.initial_positions.length === 0
+    ) {
+      alert("Please click on the screen to provide initial positions");
+      return;
+    }
     socket.emit("start_simulation", configOptions);
     clearSimulation();
   },
@@ -119,10 +126,11 @@ function drawRobot(ctx, robot) {
   ctx.beginPath();
 
   const color = robot.getColor();
+  const radius = Robot.ROBOT_SIZE;
 
   // Draw circle
   const [x, y] = robot.getCanvasPosition();
-  ctx.arc(x, y, Robot.ROBOT_SIZE, 0, Math.PI * 2);
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
   ctx.fill();
@@ -134,9 +142,21 @@ function drawRobot(ctx, robot) {
   ctx.strokeText(robot.id, x, y);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `${Robot.ROBOT_SIZE + 1}px Arial`;
+  ctx.font = `${radius + 1}px Arial`;
   ctx.fill();
   ctx.stroke();
+
+  if (configOptions.multiplicity_detection) {
+    // Draw node label
+    ctx.beginPath();
+    ctx.strokeStyle = "#000";
+    ctx.strokeText("" + robot.multiplicity, x + radius + 1, y - radius - 1);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${radius + 1}px Arial`;
+    ctx.fill();
+    ctx.stroke();
+  }
 }
 
 /**
@@ -314,12 +334,17 @@ function drawSnapshot(snapshot) {
 
   for (let id in robotsHistory) {
     let [x, y] = robotsHistory[id][0];
+    const multiplicity = robotsHistory[id][4];
+    const state = robotsHistory[id][1];
+
     if (robots[id] === undefined) {
-      robots[id] = new Robot(x, y, id, "black", 1);
+      robots[id] = new Robot(x, y, id, "black", 1, multiplicity);
     }
 
     robots[id].setPosition(x, y);
-    robots[id].setState(robotsHistory[id][1]);
+    robots[id].setState(state);
+    robots[id].multiplicity = multiplicity;
+
     drawRobot(ctx, robots[id]);
   }
 }
@@ -348,6 +373,7 @@ function handleCanvasClick(e) {
     `${currRobotId++}`,
     configOptions.robot_colors,
     configOptions.robot_speeds,
+    1,
     true
   );
 

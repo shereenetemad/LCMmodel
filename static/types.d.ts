@@ -1,6 +1,6 @@
 type Snapshot = [
   number,
-  Record<string, [Coordinates, State, FrozenState, TerminatedState]>
+  Record<string, [Coordinates, State, FrozenState, TerminatedState, Multiplicity]>
 ];
 
 type RobotMap = Record<string, Robot>;
@@ -12,6 +12,8 @@ type State = string;
 type FrozenState = boolean;
 
 type TerminatedState = boolean;
+
+type Multiplicity = number;
 
 type QueueNode = { value: Snapshot; next: QueueNode | undefined };
 
