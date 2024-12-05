@@ -20,7 +20,8 @@ let lastFrameTime = 0;
 let stopAnimation = false;
 let currRobotId = 0;
 let simulationId = undefined;
-let sec = undefined;
+let sec = [];
+let drawingSimulation = false;
 
 //@ts-ignore
 const socket = io(window.location.host);
@@ -70,6 +71,7 @@ const startSimulation = {
       return;
     }
     socket.emit("start_simulation", configOptions);
+    lastSentConfigOptions = { ...configOptions };
     clearSimulation();
   },
 };
@@ -83,6 +85,10 @@ const togglePause = {
   },
 };
 
+const clearSimulationObj = {
+  clear_simulation: clearSimulation,
+};
+
 const configOptions = {
   num_of_robots: 3,
   initialization_method: labels.Random,
@@ -92,6 +98,7 @@ const configOptions = {
   scheduler_type: labels.Async,
   probability_distribution: labels.Exponential,
   visibility_radius: 100,
+  show_visibility: true,
   robot_orientations: null,
   multiplicity_detection: false,
   robot_colors: "#000000",
@@ -107,14 +114,15 @@ const configOptions = {
   height_bound: canvas.height / 2,
 };
 
+let lastSentConfigOptions = { ...configOptions };
+
 resizeCanvas();
 
 /**
  * Draws a Robot on the canvas
- * @param {CanvasRenderingContext2D} ctx - Canvas context
  * @param {Robot} robot
  */
-function drawRobot(ctx, robot) {
+function drawRobot(robot) {
   ctx.beginPath();
 
   const color = robot.getColor();
@@ -138,6 +146,7 @@ function drawRobot(ctx, robot) {
   ctx.fill();
   ctx.stroke();
 
+  // Draw multiplicity detection
   if (configOptions.multiplicity_detection) {
     // Draw node label
     ctx.beginPath();
@@ -149,26 +158,39 @@ function drawRobot(ctx, robot) {
     ctx.fill();
     ctx.stroke();
   }
+
+  // Draw visibility radius
+  if (configOptions.show_visibility) {
+    const vis_radius = drawingSimulation
+      ? lastSentConfigOptions.visibility_radius
+      : configOptions.visibility_radius;
+
+    ctx.arc(x, y, vis_radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgb(169 169 169 / 25%)";
+    ctx.stroke();
+  }
 }
 
 /**
- * Draws smallest enclosing circle
- * @param {Circle} c - Smallest Enclosing Circle
+ * Draws smallest enclosing circles
+ * @param {Circle[]} circles - Smallest Enclosing Circles
  */
-function drawSEC(c) {
-  if (c === undefined) {
+function drawSEC(circles) {
+  if (circles === undefined || circles.length === 0) {
     return;
   }
 
-  const center_x = c[0][0] * Robot.ROBOT_X_POS_FACTOR;
-  const center_y = c[0][1] * -1 * Robot.ROBOT_X_POS_FACTOR;
-  const radius = c[1] * Robot.ROBOT_X_POS_FACTOR;
-  ctx.strokeStyle = "rgb(169 169 169 / 50%)";
+  for (const circle of circles) {
+    const center_x = circle[0][0] * Robot.ROBOT_X_POS_FACTOR;
+    const center_y = circle[0][1] * -1 * Robot.ROBOT_X_POS_FACTOR;
+    const radius = circle[1] * Robot.ROBOT_X_POS_FACTOR;
+    ctx.strokeStyle = "rgb(169 169 169 / 50%)";
 
-  ctx.beginPath();
+    ctx.beginPath();
 
-  ctx.arc(center_x, center_y, radius, 0, 2 * Math.PI);
-  ctx.stroke();
+    ctx.arc(center_x, center_y, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
 }
 
 const gui = setupOptions(configOptions);
@@ -191,7 +213,8 @@ function setupOptions(configOptions) {
     .onFinishChange((size) => Robot.setRobotSize(size));
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
-  gui.add(configOptions, "visibility_radius", 1, 100, 1);
+  gui.add(configOptions, "visibility_radius", 1, 1000, 1).onChange();
+  gui.add(configOptions, "show_visibility");
   gui.add(configOptions, "time_precision", 1, 10, 1);
   gui.add(configOptions, "threshold_precision", 1, 10, 1);
   gui.add(configOptions, "sampling_rate", 0.01, 0.5, 0.01);
@@ -201,23 +224,29 @@ function setupOptions(configOptions) {
   const startSimulationBtn = gui
     .add(startSimulation, "start_simulation")
     .name("Start simulation");
-
-  startSimulationBtn.domElement.parentElement.parentElement.classList.add("start-btn");
-
-  const pauseController = gui
+  const pauseBtn = gui
     .add(togglePause, "pause_simulation")
     .name("Pause")
     .onFinishChange(updatePauseText);
+  const clearSimulationBtn = gui
+    .add(clearSimulationObj, "clear_simulation")
+    .name("Clear Simulation");
 
-  pauseController.domElement.parentElement.parentElement.classList.add("pause-btn");
+  startSimulationBtn.domElement.parentElement.parentElement.classList.add("start-btn");
+
+  pauseBtn.domElement.parentElement.parentElement.classList.add("pause-btn");
+
+  clearSimulationBtn.domElement.parentElement.parentElement.classList.add(
+    "clear-simulation-btn"
+  );
 
   function updatePauseText() {
     if (paused) {
-      pauseController.name("Play");
-      pauseController.property = "play_simulation";
+      pauseBtn.name("Play");
+      pauseBtn.property = "play_simulation";
     } else {
-      pauseController.name("Pause");
-      pauseController.property = "pause_simulation";
+      pauseBtn.name("Pause");
+      pauseBtn.property = "pause_simulation";
     }
   }
 
@@ -246,6 +275,7 @@ function setupOptions(configOptions) {
 
 function startDrawingLoop() {
   stopAnimation = false;
+  drawingSimulation = true;
 
   // requestAnimationFrame initiates the animation loop
   requestAnimationFrame(drawLoop); // Start the loop
@@ -253,6 +283,7 @@ function startDrawingLoop() {
 
 function stopDrawingLoop() {
   stopAnimation = true;
+  drawingSimulation = false;
 }
 
 function drawLoop(currentTime) {
@@ -336,8 +367,7 @@ function drawSnapshot(snapshot) {
     robots[id].setPosition(x, y);
     robots[id].setState(state);
     robots[id].multiplicity = multiplicity;
-
-    drawRobot(ctx, robots[id]);
+    drawRobot(robots[id]);
   }
 }
 
@@ -369,7 +399,7 @@ function handleCanvasClick(e) {
     true
   );
 
-  drawRobot(ctx, robot);
+  drawRobot(robot);
 
   configOptions.initial_positions.push(robot.getPosition());
   message.style.display = "none";
@@ -387,7 +417,8 @@ function clearSimulation() {
   configOptions.initial_positions = [];
   paused = false;
   gui.updatePauseText();
-  sec = undefined;
+  sec = [];
+  drawingSimulation = false;
 }
 
 /**

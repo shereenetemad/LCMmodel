@@ -63,6 +63,7 @@ class Scheduler:
                 threshold_precision=threshold_precision,
                 speed=robot_speeds_list[i],
                 algorithm=algorithm,
+                visibility_radius=self.visibility_radius,
             )
             self.robots.append(new_robot)
 

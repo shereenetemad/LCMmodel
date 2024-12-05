@@ -76,6 +76,12 @@ class Robot:
             f"[{time}] {{R{self.id}}} LOOK    -- Snapshot {self.prettify_snapshot(snapshot)}"
         )
 
+        if len(self.snapshot) == 1:
+            self.frozen = True
+            self.terminated = True
+            self.wait(time)
+            return
+
         algo, algo_terminal = self._select_algorithm()
         self.calculated_position = self._compute(algo, algo_terminal)
         pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
@@ -172,7 +178,9 @@ class Robot:
         return coord
 
     def _robot_is_visible(self, coord: Coordinates):
-        return True
+        distance = math.dist(self.coordinates, coord)
+
+        return self.visibility_radius > distance
 
     def _midpoint(self) -> tuple[Coordinates, list[any]]:
         x = y = 0
@@ -187,9 +195,9 @@ class Robot:
 
     def _midpoint_terminal(self, coord: Coordinates, args=None) -> bool:
 
-        num_robots = len(self.snapshot.keys())
-        for i in range(num_robots):
-            if self._distance(self.snapshot[i].pos, coord) > math.pow(
+        robot_ids = self.snapshot.keys()
+        for id in robot_ids:
+            if self._distance(self.snapshot[id].pos, coord) > math.pow(
                 10, -self.threshold_precision
             ):
                 return False
@@ -204,30 +212,37 @@ class Robot:
         if num_robots == 1:
             destination = self.snapshot[0].pos
         else:
-            self.sec = self._sec(num_robots)
+            self.sec = self._sec()
 
             destination = self._closest_point_on_circle(self.sec, self.coordinates)
         return (destination, [self.sec])
 
     def _sec_terminal(self, _, args: list[Circle]) -> bool:
-        num_robots = len(self.snapshot.keys())
+        ids = self._get_visible_robots()
+
         circle = args[0]
 
         if circle == None:
             return True
 
-        for i in range(num_robots):
+        for i in ids:
             if not self._is_point_on_circle(self.snapshot[i].pos, circle):
                 return False
         return True
 
-    def _sec(self, num_robots: int) -> Circle:
+    def _sec(self) -> Circle:
         """Returns smallest enclosing circle given number of robots in the form of
         (Center, Radius)"""
 
         sec: Circle = Circle((0, 0), -1)
-        for i in range(num_robots - 1):
-            for j in range(i + 1, num_robots):
+
+        ids = self._get_visible_robots()
+        num_robots = len(ids)
+        for x in range(num_robots - 1):
+            for y in range(x + 1, num_robots):
+                i = ids[x]
+                j = ids[y]
+
                 a = self.snapshot[i].pos
                 b = self.snapshot[j].pos
                 circle = self._circle_from_two(a, b)
@@ -236,9 +251,13 @@ class Robot:
                 if currRadius > maxRadius:
                     sec = circle
 
-        for i in range(num_robots - 2):
-            for j in range(i + 1, num_robots - 1):
-                for k in range(j + 1, num_robots):
+        for x in range(num_robots - 2):
+            for y in range(x + 1, num_robots - 1):
+                for z in range(y + 1, num_robots):
+                    i = ids[x]
+                    j = ids[y]
+                    k = ids[z]
+
                     a = self.snapshot[i].pos
                     b = self.snapshot[j].pos
                     c = self.snapshot[k].pos
@@ -368,3 +387,9 @@ class Robot:
             result += f"\n\t{key}{frozen}{terminated}: {value[1]} - ({float(value.pos.x),float(value.pos.y)})"
 
         return result
+
+    def _get_visible_robots(self):
+        ids = list(self.snapshot.keys())
+        ids.sort()
+
+        return ids

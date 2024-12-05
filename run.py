@@ -77,24 +77,24 @@ def handle_simulation_request(data):
 
     seed = data["random_seed"]
     generator = np.random.default_rng(seed=seed)
-    num_of_robots = data["num_of_robots"]
+    num_robots = data["num_of_robots"]
     initial_positions: list = data["initial_positions"]
 
     if len(initial_positions) != 0:
         # User defined
         initial_positions = data["initial_positions"]
-        num_of_robots = len(initial_positions)
+        num_robots = len(initial_positions)
     else:
         # Random
         initial_positions = generate_initial_positions(
-            generator, data["width_bound"], data["height_bound"], num_of_robots
+            generator, data["width_bound"], data["height_bound"], num_robots
         )
 
     logger = setup_logger(simulation_id, data["algorithm"])
     scheduler = Scheduler(
         logger=logger,
         seed=seed,
-        num_of_robots=num_of_robots,
+        num_of_robots=num_robots,
         initial_positions=initial_positions,
         robot_speeds=data["robot_speeds"],
         rigid_movement=data["rigid_movement"],
@@ -103,6 +103,7 @@ def handle_simulation_request(data):
         sampling_rate=data["sampling_rate"],
         labmda_rate=data["labmda_rate"],
         algorithm=data["algorithm"],
+        visibility_radius=data["visibility_radius"],
     )
 
     def run_simulation():
@@ -135,7 +136,10 @@ def handle_simulation_request(data):
                             json.dumps(
                                 {
                                     "simulation_id": simulation_id,
-                                    "sec": scheduler.robots[0].sec,
+                                    "sec": [
+                                        scheduler.robots[i].sec
+                                        for i in range(num_robots)
+                                    ],
                                 }
                             ),
                         )

@@ -66,3 +66,8 @@ body {
 .pause-btn {
   text-align: center;
 }
+
+.clear-simulation-btn {
+  text-align: center;
+  background-color: rgb(192, 47, 47) !important;
+}
