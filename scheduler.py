@@ -68,6 +68,7 @@ class Scheduler:
             self.robots.append(new_robot)
 
         self.initialize_queue_exponential()
+        Robot._generator = self.generator
 
     def get_snapshot(
         self, time: float, visualization_snapshot: bool = False

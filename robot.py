@@ -3,11 +3,11 @@ from type_defs import *
 from typing import Callable
 import math
 import logging
-from random import randint, shuffle
 
 
 class Robot:
     _logger: logging.Logger | None = None
+    _generator = None
 
     def __init__(
         self,
@@ -261,7 +261,7 @@ class Robot:
         Time Complexity: O(n)
         """
         points_copy = points.copy()
-        shuffle(points_copy)
+        Robot._generator.shuffle(points_copy)
         return self._sec_welzl_recur(points_copy, [], len(points_copy))
 
     def _sec(self) -> Circle:
@@ -311,7 +311,7 @@ class Robot:
     ) -> Circle:
         if n == 0 or len(R) == 3:
             return self._min_circle(R)
-        idx = randint(0, n - 1)
+        idx = Robot._generator.integers(0, n - 1) if n > 1 else 0
         p = self.snapshot[points[idx]].pos
         points[idx], points[n - 1] = points[n - 1], points[idx]
         c = self._sec_welzl_recur(points, R.copy(), n - 1)
