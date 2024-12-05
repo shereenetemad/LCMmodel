@@ -314,7 +314,7 @@ class Robot:
         p = self.snapshot[points[idx]].pos
         points[idx], points[n - 1] = points[n - 1], points[idx]
         c = self._sec_welzl_recur(points, R.copy(), n - 1)
-        if self._distance(c.center, p) <= c.radius:
+        if round(self._distance(c.center, p), self.threshold_precision) <= c.radius:
             return c
         R.append(p)
         return self._sec_welzl_recur(points, R.copy(), n - 1)
