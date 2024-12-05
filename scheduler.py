@@ -25,7 +25,7 @@ class Scheduler:
         obstructed_visibility: bool = False,
         rigid_movement: bool = True,
         multiplicity_detection: bool = False,
-        probability_distribution: str = DistributionType.GAUSSIAN,
+        probability_distribution: str = DistributionType.Exponential,
         scheduler_type: str = SchedulerType.ASYNC,
         time_precision: int = 5,
         threshold_precision: int = 5,
