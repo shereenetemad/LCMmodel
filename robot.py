@@ -234,8 +234,8 @@ class Robot:
                 self.sec = self._circle_from_three(a, b, c)
             destination = self._closest_point_on_circle(self.sec, self.coordinates)
         else:
-            self.sec = self._sec()
-            # self.sec = self._sec_welzl(ids)
+            # self.sec = self._sec()
+            self.sec = self._sec_welzl(ids)
             destination = self._closest_point_on_circle(self.sec, self.coordinates)
         return (destination, [self.sec])
 
@@ -438,8 +438,6 @@ class Robot:
         return Coordinates((cy * b - by * c) / (2 * d), (bx * c - cx * b) / (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
-        if not a or not b:
-            return 0
         if a == 0:
             a = Coordinates(0, 0)
         distance = math.dist(a, b)
