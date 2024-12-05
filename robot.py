@@ -3,6 +3,7 @@ from type_defs import *
 from typing import Callable
 import math
 import logging
+from random import randint, shuffle
 
 
 class Robot:
@@ -84,7 +85,11 @@ class Robot:
 
         algo, algo_terminal = self._select_algorithm()
         self.calculated_position = self._compute(algo, algo_terminal)
-        pos_str = f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+        pos_str = (
+            f"({self.calculated_position[0]}, {self.calculated_position[1]})"
+            if self.calculated_position
+            else ""
+        )
         Robot._logger.info(
             f"[{time}] {{R{self.id}}} COMPUTE -- Computed Pos: {pos_str}"
         )
@@ -204,20 +209,43 @@ class Robot:
         return True
 
     def _smallest_enclosing_circle(self) -> tuple[Coordinates, list[Circle]]:
+        """Intermediary function that calls sec algorithms based on num of robots"""
+        ids = self._get_visible_robots()
         num_robots = len(self.snapshot)
         destination: Coordinates | None = None
-        sec: Circle | None = None
         if num_robots == 0:
             destination = (0, 0)
-        if num_robots == 1:
+        elif num_robots == 1:
             destination = self.snapshot[0].pos
+        elif num_robots == 2:
+            i, j = ids[0], ids[1]
+            a, b = self.snapshot[i].pos, self.snapshot[j].pos
+            self.sec = self._circle_from_two(a, b)
+        elif num_robots == 3:
+            # find sec using 2 points, otherwise find sec intersecting 3 points
+            for i in range(num_robots):
+                for j in range(i + 1, num_robots):
+                    a, b = self.snapshot[ids[i]].pos, self.snapshot[ids[j]].pos
+                    sec = self._circle_from_two(a, b)
+                    if self._valid_circle(sec):
+                        self.sec = sec
+            if not self.sec:
+                i, j, k = ids[0], ids[1], ids[2]
+                a, b, c = (
+                    self.snapshot[i].pos,
+                    self.snapshot[j].pos,
+                    self.snapshot[k].pos,
+                )
+                self.sec = self._circle_from_three(a, b, c)
+            destination = self._closest_point_on_circle(self.sec, self.coordinates)
         else:
             self.sec = self._sec()
-
+            # self.sec = self._sec_welzl(ids)
             destination = self._closest_point_on_circle(self.sec, self.coordinates)
         return (destination, [self.sec])
 
     def _sec_terminal(self, _, args: list[Circle]) -> bool:
+        """Determines terminal state for robot"""
         ids = self._get_visible_robots()
 
         circle = args[0]
@@ -230,10 +258,22 @@ class Robot:
                 return False
         return True
 
-    def _sec(self) -> Circle:
-        """Returns smallest enclosing circle given number of robots in the form of
-        (Center, Radius)"""
+    def _sec_welzl(self, points: list[Id]) -> Circle:
+        """
+        Returns smallest enclosing circle given number of robots in the form of
+        (Center, Radius)
+        Time Complexity: O(n)
+        """
+        points_copy = points.copy()
+        shuffle(points_copy)
+        return self._sec_welzl_recur(points_copy, [], len(points_copy))
 
+    def _sec(self) -> Circle:
+        """
+        Returns smallest enclosing circle given number of robots in the form of
+        (Center, Radius)
+        Time Complexity: O(n^3)
+        """
         sec: Circle = Circle((0, 0), -1)
 
         ids = self._get_visible_robots()
@@ -262,7 +302,7 @@ class Robot:
                     b = self.snapshot[j].pos
                     c = self.snapshot[k].pos
 
-                    if self.is_acute_triangle(a, b, c):
+                    if self._is_acute_triangle(a, b, c):
                         circle = self._circle_from_three(a, b, c)
                         currRadius = circle.radius
                         maxRadius = sec.radius
@@ -270,7 +310,37 @@ class Robot:
                             sec = circle
         return sec
 
-    def is_acute_triangle(self, a: Coordinates, b: Coordinates, c: Coordinates) -> bool:
+    def _sec_welzl_recur(
+        self, points: list[Id], R: list[Coordinates], n: int
+    ) -> Circle:
+        if n == 0 or len(R) == 3:
+            return self._min_circle(R)
+        idx = randint(0, n - 1)
+        p = self.snapshot[points[idx]].pos
+        points[idx], points[n - 1] = points[n - 1], points[idx]
+        c = self._sec_welzl_recur(points, R.copy(), n - 1)
+        if self._distance(c.center, p) <= c.radius:
+            return c
+        R.append(p)
+        return self._sec_welzl_recur(points, R.copy(), n - 1)
+
+    def _min_circle(self, points: list[Coordinates]) -> Circle:
+        if not points:
+            return Circle(0, 0)
+        elif len(points) == 1:
+            return Circle(points[0], 0)
+        elif len(points) == 2:
+            return self._circle_from_two(points[0], points[1])
+        for i in range(3):
+            for j in range(i + 1, 3):
+                c = self._circle_from_two(points[i], points[j])
+                if self._valid_circle(c, points):
+                    return c
+        return self._circle_from_three(points[0], points[1], points[2])
+
+    def _is_acute_triangle(
+        self, a: Coordinates, b: Coordinates, c: Coordinates
+    ) -> bool:
         # Calculate squared lengths of each side
         ab_sq = (a.x - b.x) ** 2 + (a.y - b.y) ** 2
         bc_sq = (b.x - c.x) ** 2 + (b.y - c.y) ** 2
@@ -309,17 +379,18 @@ class Robot:
 
         return Coordinates(cx, cy)
 
-    def _valid_circle(self, circle: Circle) -> bool:
+    def _valid_circle(self, circle: Circle, points: list[Coordinates] = None) -> bool:
         """Returns False if at least one point does not lie within given circle"""
+        robots = points if points else self.snapshot.items()
 
         # Iterate through all coordinates
-        for _, value in self.snapshot.items():
+        for robot in robots:
+            if not points:
+                robot = robot[1].pos
             # If point does not lie inside of the given circle; i.e.: if
             # distance between the center coord and point is more than radius
             if (
-                math.round(
-                    self._distance(circle.center, value.pos), self.threshold_precision
-                )
+                round(self._distance(circle.center, robot), self.threshold_precision)
                 > circle.radius
             ):
                 return False
@@ -372,12 +443,12 @@ class Robot:
         return Coordinates((cy * b - by * c) / (2 * d), (bx * c - cx * b) / (2 * d))
 
     def _distance(self, a: Coordinates, b: Coordinates) -> float:
+        if not a or not b:
+            return 0
+        if a == 0:
+            a = Coordinates(0, 0)
         distance = math.dist(a, b)
-
         return distance
-
-    def __str__(self):
-        return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
 
     def prettify_snapshot(self, snapshot: dict[Id, SnapshotDetails]) -> str:
         result = ""
@@ -393,3 +464,6 @@ class Robot:
         ids.sort()
 
         return ids
+
+    def __str__(self):
+        return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
