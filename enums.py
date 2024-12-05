@@ -17,11 +17,11 @@ class RobotState(str, Enum):
 
 
 class SchedulerType(Enum):
-    ASYNC = "async"
+    ASYNC = "Async"
 
 
 class DistributionType(Enum):
-    GAUSSIAN = "gaussian"
+    EXPONENTIAL = "Exponential"
 
 
 class Algorithm(Enum):

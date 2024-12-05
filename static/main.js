@@ -57,7 +57,7 @@ const schedulerTypes = [labels.Async, labels.Sync];
 
 const algorithmOptions = [labels.Gathering, labels.SEC];
 
-const probabilityDistributions = [labels.Exponential, labels.Gaussian];
+const probabilityDistributions = [labels.Exponential];
 
 const initialPositionsOptions = [labels.Random, labels.UserDefined];
 
