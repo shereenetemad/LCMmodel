@@ -213,7 +213,7 @@ function setupOptions(configOptions) {
     .onFinishChange((size) => Robot.setRobotSize(size));
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
-  gui.add(configOptions, "visibility_radius", 1, 1000, 1).onChange();
+  gui.add(configOptions, "visibility_radius", 50, 1000, 1);
   gui.add(configOptions, "show_visibility");
   gui.add(configOptions, "time_precision", 1, 10, 1);
   gui.add(configOptions, "threshold_precision", 1, 10, 1);

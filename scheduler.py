@@ -25,7 +25,7 @@ class Scheduler:
         obstructed_visibility: bool = False,
         rigid_movement: bool = True,
         multiplicity_detection: bool = False,
-        probability_distribution: str = DistributionType.Exponential,
+        probability_distribution: str = DistributionType.EXPONENTIAL,
         scheduler_type: str = SchedulerType.ASYNC,
         time_precision: int = 5,
         threshold_precision: int = 5,
@@ -129,25 +129,28 @@ class Scheduler:
         current_event = heapq.heappop(self.priority_queue)[1]
 
         event_state = current_event.state
-        robot = self.robots[current_event.id]
+
         time = self._precise_time(current_event.time)
 
-        if event_state == RobotState.LOOK:
-            robot.look(self.get_snapshot(time), time)
-
-            # Removes robot from simulation
-            if robot.terminated == True:
-                return 4
-            exit_code = 1
-        elif event_state == RobotState.MOVE:
-            robot.move(time)
-            exit_code = 2
-        elif event_state == RobotState.WAIT:
-            robot.wait(time)
-            exit_code = 3
-        elif event_state == None:
+        if event_state == None:
             self.get_snapshot(time, visualization_snapshot=True)
             exit_code = 0
+        else:
+            robot = self.robots[current_event.id]
+            robot.state = event_state
+            if event_state == RobotState.LOOK:
+                robot.look(self.get_snapshot(time), time)
+
+                # Removes robot from simulation
+                if robot.terminated == True:
+                    return 4
+                exit_code = 1
+            elif event_state == RobotState.MOVE:
+                robot.move(time)
+                exit_code = 2
+            elif event_state == RobotState.WAIT:
+                robot.wait(time)
+                exit_code = 3
 
         self.generate_event(current_event)
         return exit_code
