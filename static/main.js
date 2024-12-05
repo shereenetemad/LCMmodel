@@ -5,9 +5,7 @@ import Robot from "./Robot.js";
 window.addEventListener("resize", resizeCanvas);
 
 // Elements
-let canvas = /** @type {HTMLCanvasElement} */ (
-  document.getElementById("canvas")
-);
+let canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("canvas"));
 let ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
 let time = /**@type {HTMLElement} */ (document.getElementById("time-value"));
 let message = /**@type {HTMLElement} */ (document.getElementById("message"));
@@ -215,7 +213,7 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
   gui
-    .add(configOptions, "visibility_radius", 50, 1000, 1)
+    .add(configOptions, "visibility_radius", 50, 1500, 1500)
     .onFinishChange(changeVisualizationRadius);
   gui.add(configOptions, "show_visibility");
   gui.add(configOptions, "time_precision", 1, 10, 1);
@@ -235,9 +233,7 @@ function setupOptions(configOptions) {
     .add(clearSimulationObj, "clear_simulation")
     .name("Clear Simulation");
 
-  startSimulationBtn.domElement.parentElement.parentElement.classList.add(
-    "start-btn"
-  );
+  startSimulationBtn.domElement.parentElement.parentElement.classList.add("start-btn");
 
   pauseBtn.domElement.parentElement.parentElement.classList.add("pause-btn");
 
@@ -258,16 +254,14 @@ function setupOptions(configOptions) {
   function changeInitializationMethod() {
     const numRobotsControllerElement = numRobotsController.domElement;
     if (configOptions.initialization_method === labels.Random) {
-      numRobotsControllerElement.parentElement.parentElement.style.display =
-        "list-item";
+      numRobotsControllerElement.parentElement.parentElement.style.display = "list-item";
       numRobotsController.setValue(3);
 
       canvas.removeEventListener("click", handleCanvasClick);
 
       clearSimulation();
     } else {
-      numRobotsControllerElement.parentElement.parentElement.style.display =
-        "none";
+      numRobotsControllerElement.parentElement.parentElement.style.display = "none";
       numRobotsController.setValue(0);
       message.style.display = "block";
 
@@ -333,12 +327,7 @@ function drawLoop(currentTime) {
 }
 
 function clearCanvas() {
-  ctx.clearRect(
-    -canvas.width / 2,
-    -canvas.height / 2,
-    canvas.width,
-    canvas.height
-  );
+  ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(-canvas / 2, -canvas.height / 2, canvas.width, canvas.height);
 }
