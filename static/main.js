@@ -97,7 +97,7 @@ const configOptions = {
   robot_size: Robot.ROBOT_SIZE,
   scheduler_type: labels.Async,
   probability_distribution: labels.Exponential,
-  visibility_radius: 100,
+  visibility_radius: 1500,
   show_visibility: true,
   robot_orientations: null,
   multiplicity_detection: false,
@@ -213,7 +213,7 @@ function setupOptions(configOptions) {
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
   gui
-    .add(configOptions, "visibility_radius", 50, 1500, 1500)
+    .add(configOptions, "visibility_radius", 50, 1500, 1)
     .onFinishChange(changeVisualizationRadius);
   gui.add(configOptions, "show_visibility");
   gui.add(configOptions, "time_precision", 1, 10, 1);
