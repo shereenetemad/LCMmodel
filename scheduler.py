@@ -101,10 +101,17 @@ class Scheduler:
         robot = self.robots[current_event.id]
 
         # Robot will definitely reach calculated position
-        if self.rigid_movement == True and current_event.state == RobotState.MOVE:
-            new_event_time = current_event.time + (
-                math.dist(robot.calculated_position, robot.start_position) / robot.speed
-            )
+        if current_event.state == RobotState.MOVE:
+            distance = 0.0
+            if self.rigid_movement == True:
+                distance = math.dist(robot.calculated_position, robot.start_position)
+            else:
+                percentage = 1 - self.generator.uniform()  # range of values is (0,1]
+                Scheduler._logger.info(f"percentage of jounrey: {percentage}")
+                distance = percentage * math.dist(
+                    robot.calculated_position, robot.start_position
+                )
+            new_event_time = current_event.time + (distance / robot.speed)
         else:
             new_event_time = current_event.time + self.generator.exponential(
                 scale=1 / self.lambda_rate

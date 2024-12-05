@@ -77,6 +77,7 @@ class Robot:
         if len(self.snapshot) == 1:
             self.frozen = True
             self.terminated = True
+            self.state = RobotState.WAIT
             self.wait(time)
             return
 
