@@ -170,7 +170,6 @@ function drawRobot(robot) {
     ctx.stroke();
   }
 }
-
 /**
  * Draws smallest enclosing circles
  * @param {Circle[]} circles - Smallest Enclosing Circles
@@ -213,7 +212,9 @@ function setupOptions(configOptions) {
     .onFinishChange((size) => Robot.setRobotSize(size));
   gui.add(configOptions, "scheduler_type", schedulerTypes);
   gui.add(configOptions, "probability_distribution", probabilityDistributions);
-  gui.add(configOptions, "visibility_radius", 50, 1000, 1);
+  gui
+    .add(configOptions, "visibility_radius", 50, 1000, 1)
+    .onFinishChange(changeVisualizationRadius);
   gui.add(configOptions, "show_visibility");
   gui.add(configOptions, "time_precision", 1, 10, 1);
   gui.add(configOptions, "threshold_precision", 1, 10, 1);
@@ -267,6 +268,15 @@ function setupOptions(configOptions) {
       canvas.addEventListener("click", handleCanvasClick);
 
       clearSimulation();
+    }
+  }
+
+  function changeVisualizationRadius() {
+    if (configOptions.initial_positions.length != 0) {
+      clearCanvas();
+      for (const id in robots) {
+        drawRobot(robots[id]);
+      }
     }
   }
 
@@ -398,6 +408,8 @@ function handleCanvasClick(e) {
     1,
     true
   );
+
+  robots[currRobotId - 1] = robot;
 
   drawRobot(robot);
 
