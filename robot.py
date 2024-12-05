@@ -94,7 +94,7 @@ class Robot:
         )
 
         if (
-            self._distance(self.calculated_position, self.coordinates)
+            math.dist(self.calculated_position, self.coordinates)
             < 10**-self.threshold_precision
         ):
             self.frozen = True
@@ -197,7 +197,7 @@ class Robot:
 
         robot_ids = self.snapshot.keys()
         for id in robot_ids:
-            if self._distance(self.snapshot[id].pos, coord) > math.pow(
+            if math.dist(self.snapshot[id].pos, coord) > math.pow(
                 10, -self.threshold_precision
             ):
                 return False
@@ -216,6 +216,7 @@ class Robot:
             i, j = ids[0], ids[1]
             a, b = self.snapshot[i].pos, self.snapshot[j].pos
             self.sec = self._circle_from_two(a, b)
+            destination = self._closest_point_on_circle(self.sec, self.coordinates)
         elif num_robots == 3:
             # find sec using 2 points, otherwise find sec intersecting 3 points
             for i in range(num_robots):
@@ -314,14 +315,14 @@ class Robot:
         p = self.snapshot[points[idx]].pos
         points[idx], points[n - 1] = points[n - 1], points[idx]
         c = self._sec_welzl_recur(points, R.copy(), n - 1)
-        if round(self._distance(c.center, p), self.threshold_precision) <= c.radius:
+        if round(math.dist(c.center, p), self.threshold_precision) <= c.radius:
             return c
         R.append(p)
         return self._sec_welzl_recur(points, R.copy(), n - 1)
 
     def _min_circle(self, points: list[Coordinates]) -> Circle:
         if not points:
-            return Circle(0, 0)
+            return Circle(Coordinates(0, 0), 0)
         elif len(points) == 1:
             return Circle(points[0], 0)
         elif len(points) == 2:
@@ -363,7 +364,7 @@ class Robot:
         vx, vy = point.x - center.x, point.y - center.y
 
         # Distance from the center to the point
-        d = self._distance(center, point)
+        d = math.dist(center, point)
 
         # Scaling factor to project the point onto the circle
         scale = radius / d
@@ -385,7 +386,7 @@ class Robot:
             # If point does not lie inside of the given circle; i.e.: if
             # distance between the center coord and point is more than radius
             if (
-                round(self._distance(circle.center, robot), self.threshold_precision)
+                round(math.dist(circle.center, robot), self.threshold_precision)
                 > circle.radius
             ):
                 return False
@@ -396,7 +397,7 @@ class Robot:
 
         # Midpoint between a and b
         center = Coordinates((a.x + b.x) / 2.0, (a.y + b.y) / 2.0)
-        return Circle(center, self._distance(a, b) / 2.0)
+        return Circle(center, math.dist(a, b) / 2.0)
 
     def _circle_from_three(
         self, a: Coordinates, b: Coordinates, c: Coordinates
@@ -436,12 +437,6 @@ class Robot:
         if d == 0:
             return Coordinates(0, 0)
         return Coordinates((cy * b - by * c) / (2 * d), (bx * c - cx * b) / (2 * d))
-
-    def _distance(self, a: Coordinates, b: Coordinates) -> float:
-        if a == 0:
-            a = Coordinates(0, 0)
-        distance = math.dist(a, b)
-        return distance
 
     def prettify_snapshot(self, snapshot: dict[Id, SnapshotDetails]) -> str:
         result = ""
