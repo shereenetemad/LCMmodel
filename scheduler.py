@@ -101,10 +101,17 @@ class Scheduler:
         robot = self.robots[current_event.id]
 
         # Robot will definitely reach calculated position
-        if self.rigid_movement == True and current_event.state == RobotState.MOVE:
-            new_event_time = current_event.time + (
-                math.dist(robot.calculated_position, robot.start_position) / robot.speed
-            )
+        if current_event.state == RobotState.MOVE:
+            distance = 0.0
+            if self.rigid_movement == True:
+                distance = math.dist(robot.calculated_position, robot.start_position)
+            else:
+                percentage = 1 - self.generator.uniform()  # range of values is (0,1]
+                Scheduler._logger.info(f"percentage of jounrey: {percentage}")
+                distance = percentage * math.dist(
+                    robot.calculated_position, robot.start_position
+                )
+            new_event_time = current_event.time + (distance / robot.speed)
         else:
             new_event_time = current_event.time + self.generator.exponential(
                 scale=1 / self.lambda_rate
@@ -129,25 +136,28 @@ class Scheduler:
         current_event = heapq.heappop(self.priority_queue)[1]
 
         event_state = current_event.state
-        robot = self.robots[current_event.id]
+
         time = self._precise_time(current_event.time)
 
-        if event_state == RobotState.LOOK:
-            robot.look(self.get_snapshot(time), time)
-
-            # Removes robot from simulation
-            if robot.terminated == True:
-                return 4
-            exit_code = 1
-        elif event_state == RobotState.MOVE:
-            robot.move(time)
-            exit_code = 2
-        elif event_state == RobotState.WAIT:
-            robot.wait(time)
-            exit_code = 3
-        elif event_state == None:
+        if event_state == None:
             self.get_snapshot(time, visualization_snapshot=True)
             exit_code = 0
+        else:
+            robot = self.robots[current_event.id]
+            robot.state = event_state
+            if event_state == RobotState.LOOK:
+                robot.look(self.get_snapshot(time), time)
+
+                # Removes robot from simulation
+                if robot.terminated == True:
+                    return 4
+                exit_code = 1
+            elif event_state == RobotState.MOVE:
+                robot.move(time)
+                exit_code = 2
+            elif event_state == RobotState.WAIT:
+                robot.wait(time)
+                exit_code = 3
 
         self.generate_event(current_event)
         return exit_code
