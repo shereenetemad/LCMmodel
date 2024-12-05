@@ -91,6 +91,8 @@ def handle_simulation_request(data):
         )
 
     logger = setup_logger(simulation_id, data["algorithm"])
+    logger.info("Config:\n\n%s\n", json.dumps(data, indent=2))
+
     scheduler = Scheduler(
         logger=logger,
         seed=seed,
