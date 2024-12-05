@@ -46,3 +46,5 @@ class Queue {
     return this.head ? this.head.value : undefined;
   }
 }
+
+export default Queue;

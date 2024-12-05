@@ -71,3 +71,5 @@ class Robot {
     Robot.ROBOT_SIZE = size;
   }
 }
+
+export default Robot;

@@ -1,3 +1,7 @@
+import labels from "./labels.js";
+import Queue from "./Queue.js";
+import Robot from "./Robot.js";
+
 window.addEventListener("resize", resizeCanvas);
 
 // Elements
@@ -48,33 +52,21 @@ socket.on("smallest_enclosing_circle", function (data) {
   }
 });
 
-const schedulerTypes = {
-  Async: "Async",
-  Sync: "Sync",
-};
+const schedulerTypes = [labels.Async, labels.Sync];
 
-const probabilityDistributions = {
-  Exponential: "Exponential",
-  Gaussian: "Gaussian",
-};
+const algorithmOptions = [labels.Gathering, labels.SEC];
 
-const algorithmOptions = {
-  Gathering: "Gathering",
-  SEC: "SEC",
-};
+const probabilityDistributions = [labels.Exponential, labels.Gaussian];
 
-const initialPositionsOptions = {
-  Random: "Random",
-  "User Defined": "User Defined",
-};
+const initialPositionsOptions = [labels.Random, labels.UserDefined];
 
 const startSimulation = {
   start_simulation: () => {
     if (
-      configOptions.initialization_method === "User Defined" &&
+      configOptions.initialization_method === labels.UserDefined &&
       configOptions.initial_positions.length === 0
     ) {
-      alert("Please click on the screen to provide initial positions");
+      alert(labels.MissingInitialPositionsAlert);
       return;
     }
     socket.emit("start_simulation", configOptions);
@@ -93,12 +85,12 @@ const togglePause = {
 
 const configOptions = {
   num_of_robots: 3,
-  initialization_method: "Random",
+  initialization_method: labels.Random,
   /** @type {Array}*/ initial_positions: [],
   robot_speeds: 1.0,
   robot_size: Robot.ROBOT_SIZE,
-  scheduler_type: "Async",
-  probability_distribution: "Exponential",
+  scheduler_type: labels.Async,
+  probability_distribution: labels.Exponential,
   visibility_radius: 100,
   robot_orientations: null,
   multiplicity_detection: false,
@@ -109,7 +101,7 @@ const configOptions = {
   threshold_precision: 5,
   sampling_rate: 0.2,
   labmda_rate: 10,
-  algorithm: "Gathering",
+  algorithm: labels.Gathering,
   random_seed: Math.floor(Math.random() * (2 ** 32 - 1)) + 1,
   width_bound: canvas.width / 2,
   height_bound: canvas.height / 2,
@@ -231,7 +223,7 @@ function setupOptions(configOptions) {
 
   function changeInitializationMethod() {
     const numRobotsControllerElement = numRobotsController.domElement;
-    if (configOptions.initialization_method === initialPositionsOptions.Random) {
+    if (configOptions.initialization_method === labels.Random) {
       numRobotsControllerElement.parentElement.parentElement.style.display = "list-item";
       numRobotsController.setValue(3);
 

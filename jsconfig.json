@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["static/types.d.ts"]
+    }
+  },
+  "include": ["**/*.js", "static/*.d.ts"]
+}
