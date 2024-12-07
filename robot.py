@@ -59,7 +59,6 @@ class Robot:
         snapshot: dict[Id, SnapshotDetails],
         time: float,
     ) -> None:
-        self.state = RobotState.LOOK
         self.snapshot = {}
         for key, value in snapshot.items():
             if self._robot_is_visible(value.pos):
@@ -79,7 +78,7 @@ class Robot:
         if len(self.snapshot) == 1:
             self.frozen = True
             self.terminated = True
-            # self.state = RobotState.WAIT
+            self.state = RobotState.WAIT
             self.wait(time)
             return
 
@@ -120,13 +119,11 @@ class Robot:
         return coord
 
     def move(self, start_time: float) -> None:
-        self.state = RobotState.MOVE
         Robot._logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
 
     def wait(self, time: float) -> None:
-        self.state = RobotState.WAIT
         self.end_time = time
 
         self.coordinates = self.get_position(time)
