@@ -36,7 +36,7 @@ class SnapshotDetails(NamedTuple):
     state: float \n
     frozen: bool \n
     terminated: bool \n
-    multiplicity: int | None \n
+    multiplicity: int | None
     """
 
     pos: Coordinates
@@ -48,24 +48,14 @@ class SnapshotDetails(NamedTuple):
 
 class Event(NamedTuple):
     """
+    time: float | Time \n
     id: int \n
-    state: str \n
-    time: float | Time
+    state: str
     """
 
+    time: float
     id: int
     state: str
-    time: float
-
-
-class PriorityEvent(NamedTuple):
-    """
-    priority: float \n
-    Event: Event
-    """
-
-    priority: float
-    Event: Event
 
 
 class Orientation(NamedTuple):

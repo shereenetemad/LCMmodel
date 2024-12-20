@@ -91,11 +91,8 @@ class Scheduler:
         # Visualization events
         if current_event.state == None and len(self.priority_queue) > 0:
             new_event_time = current_event.time + self.sampling_rate
-            priority_event = PriorityEvent(
-                new_event_time,
-                Event(-1, None, new_event_time),
-            )
-            heapq.heappush(self.priority_queue, priority_event)
+            new_event = Event(new_event_time, -1, None)
+            heapq.heappush(self.priority_queue, new_event)
             return
 
         new_event_time = 0.0
@@ -121,10 +118,7 @@ class Scheduler:
         new_event_time = self._precise_time(new_event_time)
         new_event_state = robot.state.next_state()
 
-        priority_event = PriorityEvent(
-            new_event_time,
-            Event(current_event.id, new_event_state, new_event_time),
-        )
+        priority_event = Event(new_event_time, current_event.id, new_event_state)
 
         heapq.heappush(self.priority_queue, priority_event)
 
@@ -134,7 +128,7 @@ class Scheduler:
         if len(self.priority_queue) == 0:
             return exit_code
 
-        current_event = heapq.heappop(self.priority_queue)[1]
+        current_event = heapq.heappop(self.priority_queue)
 
         event_state = current_event.state
 
@@ -189,13 +183,13 @@ class Scheduler:
             f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
         )
 
-        initial_event = Event(-1, None, 0.0)  # initial event for visualization
-        self.priority_queue: list[PriorityEvent] = [PriorityEvent(0.0, initial_event)]
+        initial_event = Event(0.0, -1, None)  # initial event for visualization
+        self.priority_queue: list[Event] = [initial_event]
 
         for robot in self.robots:
             time = self._precise_time(time_intervals[robot.id])
-            event = Event(robot.id, robot.state.next_state(), time)
-            self.priority_queue.append(PriorityEvent(time, event))
+            event = Event(time, robot.id, robot.state.next_state())
+            self.priority_queue.append(event)
 
         heapq.heapify(self.priority_queue)
 
