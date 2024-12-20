@@ -105,7 +105,7 @@ class Scheduler:
                 distance = math.dist(robot.calculated_position, robot.start_position)
             else:
                 percentage = 1 - self.generator.uniform()  # range of values is (0,1]
-                Scheduler._logger.info(f"percentage of jounrey: {percentage}")
+                Scheduler._logger.info(f"percentage of journey: {percentage}")
                 distance = percentage * math.dist(
                     robot.calculated_position, robot.start_position
                 )
