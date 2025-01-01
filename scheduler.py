@@ -64,6 +64,7 @@ class Scheduler:
                 speed=robot_speeds_list[i],
                 algorithm=algorithm,
                 visibility_radius=self.visibility_radius,
+                rigid_movement=self.rigid_movement,
             )
             self.robots.append(new_robot)
 
@@ -139,7 +140,6 @@ class Scheduler:
             exit_code = 0
         else:
             robot = self.robots[current_event.id]
-            robot.state = event_state
             if event_state == RobotState.LOOK:
                 robot.look(self.get_snapshot(time), time)
 
