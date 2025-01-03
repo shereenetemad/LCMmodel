@@ -104,7 +104,6 @@ const configOptions = {
   robot_colors: "#000000",
   obstructed_visibility: false,
   rigid_movement: true,
-  time_precision: 4,
   threshold_precision: 5,
   sampling_rate: 0.2,
   labmda_rate: 10,
@@ -216,7 +215,6 @@ function setupOptions(configOptions) {
     .add(configOptions, "visibility_radius", 50, 1500, 1)
     .onFinishChange(changeVisualizationRadius);
   gui.add(configOptions, "show_visibility");
-  gui.add(configOptions, "time_precision", 1, 10, 1);
   gui.add(configOptions, "threshold_precision", 1, 10, 1);
   gui.add(configOptions, "sampling_rate", 0.01, 0.5, 0.01);
   gui.add(configOptions, "labmda_rate");

@@ -34,7 +34,6 @@ class Robot:
         self.orientation = orientation
         self.start_time = None
         self.end_time = None
-        self.current_time = None
         self.state = RobotState.WAIT
         self.start_position = coordinates
         self.calculated_position = None
@@ -125,16 +124,17 @@ class Robot:
         Robot._logger.info(f"[{start_time}] {{R{self.id}}} MOVE")
 
         self.start_time = start_time
+        self.start_position = self.coordinates
 
     def wait(self, time: float) -> None:
-        self.state = RobotState.WAIT
-        self.end_time = time
 
         self.coordinates = self.get_position(time)
+        self.end_time = time
+        self.state = RobotState.WAIT
+
         current_distance = math.dist(self.start_position, self.coordinates)
         self.travelled_distance += current_distance
 
-        self.start_position = self.coordinates
         Robot._logger.info(
             f"[{time}] {{R{self.id}}} WAIT    -- Distance: {current_distance} | Total Distance: {self.travelled_distance} units"
         )
@@ -143,13 +143,12 @@ class Robot:
         self.end_time = None
 
     def get_position(self, time: float) -> Coordinates:
-        self.current_time = time
 
-        if self.state == RobotState.WAIT or self.state == RobotState.LOOK:
+        if self.state == RobotState.LOOK or self.state == RobotState.WAIT:
             return self.coordinates
 
         distance = math.dist(self.start_position, self.calculated_position)
-        distance_covered = self.speed * time
+        distance_covered = self.speed * (time - self.start_time)
 
         if (
             distance_covered > distance

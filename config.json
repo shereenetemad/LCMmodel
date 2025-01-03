@@ -14,7 +14,6 @@
   "robot_colors": "#000000",
   "obstructed_visibility": false,
   "rigid_movement": true,
-  "time_precision": 4,
   "threshold_precision": 5,
   "sampling_rate": 0.2,
   "labmda_rate": 10

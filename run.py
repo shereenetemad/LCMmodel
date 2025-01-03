@@ -76,6 +76,7 @@ def handle_simulation_request(data):
     terminate_flag = False
 
     seed = data["random_seed"]
+    seed = 2708382154
     generator = np.random.default_rng(seed=seed)
     num_robots = data["num_of_robots"]
     initial_positions: list = data["initial_positions"]
@@ -100,7 +101,6 @@ def handle_simulation_request(data):
         initial_positions=initial_positions,
         robot_speeds=data["robot_speeds"],
         rigid_movement=data["rigid_movement"],
-        time_precision=data["time_precision"],
         threshold_precision=data["threshold_precision"],
         sampling_rate=data["sampling_rate"],
         labmda_rate=data["labmda_rate"],

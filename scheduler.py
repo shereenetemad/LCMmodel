@@ -27,7 +27,6 @@ class Scheduler:
         multiplicity_detection: bool = False,
         probability_distribution: str = DistributionType.EXPONENTIAL,
         scheduler_type: str = SchedulerType.ASYNC,
-        time_precision: int = 5,
         threshold_precision: int = 5,
         sampling_rate: float = 0.2,
         labmda_rate: float = 5,
@@ -44,7 +43,6 @@ class Scheduler:
         self.robot_orientations = robot_orientations
         self.robot_colors = robot_colors
         self.obstructed_visibility = obstructed_visibility
-        self.time_precision = time_precision
         self.threshold_precision = threshold_precision
         self.snapshot_history: list[tuple[Time, dict[int, SnapshotDetails]]] = []
         self.visualization_snapshots: list[tuple[Time, dict[int, SnapshotDetails]]] = []
@@ -116,7 +114,6 @@ class Scheduler:
                 scale=1 / self.lambda_rate
             )
 
-        new_event_time = self._precise_time(new_event_time)
         new_event_state = robot.state.next_state()
 
         priority_event = Event(new_event_time, current_event.id, new_event_state)
@@ -133,7 +130,7 @@ class Scheduler:
 
         event_state = current_event.state
 
-        time = self._precise_time(current_event.time)
+        time = current_event.time
 
         if event_state == None:
             self.get_snapshot(time, visualization_snapshot=True)
@@ -141,6 +138,7 @@ class Scheduler:
         else:
             robot = self.robots[current_event.id]
             if event_state == RobotState.LOOK:
+                robot.state = RobotState.LOOK
                 robot.look(self.get_snapshot(time), time)
 
                 # Removes robot from simulation
@@ -177,17 +175,14 @@ class Scheduler:
         num_of_events = len(self.robots)
         time_intervals = self.generator.exponential(
             scale=1 / self.lambda_rate, size=num_of_events
-        ).round(self.time_precision)
-
-        Scheduler._logger.info(
-            f"Time precision: {self.time_precision} Time intervals between events: {time_intervals}"
         )
+        Scheduler._logger.info(f"Time intervals between events: {time_intervals}")
 
         initial_event = Event(0.0, -1, None)  # initial event for visualization
         self.priority_queue: list[Event] = [initial_event]
 
         for robot in self.robots:
-            time = self._precise_time(time_intervals[robot.id])
+            time = time_intervals[robot.id]
             event = Event(time, robot.id, robot.state.next_state())
             self.priority_queue.append(event)
 
@@ -198,9 +193,6 @@ class Scheduler:
             if robot.frozen == False:
                 return False
         return True
-
-    def _precise_time(self, x: float) -> float:
-        return round(x, self.time_precision)
 
     # Can be improved when it comes to precision/detection
     def _detect_multiplicity(self, snapshot: dict[int, SnapshotDetails]):
