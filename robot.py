@@ -458,3 +458,66 @@ class Robot:
 
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
+import logging
+import math
+import random
+from enums import RobotState, Algorithm  # Ensure this matches your project structure
+
+class Robot:
+    _logger: logging.Logger | None = None
+
+    def __init__(
+        self,
+        logger: logging.Logger,
+        id: int,
+        coordinates,
+        algorithm: str,
+        speed: float = 1.0,
+        color: str | None = None,
+        visibility_radius: float | None = None,
+        orientation: str | None = None,
+        obstructed_visibility: bool = False,
+        multiplicity_detection: bool = False,
+        rigid_movement: bool = False,
+        threshold_precision: float = 5,
+        fault_probability: float = 0.1
+    ):
+        self._logger = logger
+        self.id = id
+        self.coordinates = coordinates
+        self.speed = speed
+        self.color = color
+        self.visibility_radius = visibility_radius
+        self.orientation = orientation
+        self.obstructed_visibility = obstructed_visibility
+        self.multiplicity_detection = multiplicity_detection
+        self.rigid_movement = rigid_movement
+        self.threshold_precision = threshold_precision
+        self.fault_probability = fault_probability
+        self.faulty = False
+
+        if algorithm == "Gathering":
+            self.algorithm = Algorithm.GATHERING
+        elif algorithm == "SEC":
+            self.algorithm = Algorithm.SEC
+
+    def simulate_fault(self):
+        if random.random() < self.fault_probability:
+            self.faulty = True
+            self._logger.info(f"[Robot {self.id}] Fault occurred")
+        else:
+            self.faulty = False
+
+    def move(self, start_time: float) -> None:
+        self.simulate_fault()
+        if not self.faulty:
+            self._logger.info(f"[{start_time}] {{R{self.id}}} MOVE -- Normal movement executed")
+        else:
+            self._logger.info(f"[Robot {self.id}] Unable to move due to fault")
+
+    def look(self, snapshot: dict, time: float) -> None:
+        self.simulate_fault()
+        if not self.faulty:
+            self._logger.info(f"[{time}] {{R{self.id}}} LOOK -- Normal observation executed")
+        else:
+            self._logger.info(f"[Robot {self.id}] Faulty sensor, snapshot not updated")
