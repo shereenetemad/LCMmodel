@@ -27,3 +27,5 @@ class DistributionType(Enum):
 class Algorithm(Enum):
     GATHERING = "Gathering"
     SEC = "SEC"
+import os
+print("Current Working Directory:", os.getcwd())
