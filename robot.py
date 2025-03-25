@@ -458,6 +458,3 @@ class Robot:
 
     def __str__(self):
         return f"R{self.id}, speed: {self.speed}, color: {self.color}, coordinates: {self.coordinates}"
-f.id}}} LOOK -- Normal observation executed")
-        else:
-            self._logger.info(f"[Robot {self.id}] Faulty sensor, snapshot not updated")
