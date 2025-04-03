@@ -54,11 +54,8 @@ socket.on("smallest_enclosing_circle", function (data) {
 });
 
 const schedulerTypes = [labels.Async, labels.Sync];
-
 const algorithmOptions = [labels.Gathering, labels.SEC];
-
 const probabilityDistributions = [labels.Exponential];
-
 const initialPositionsOptions = [labels.Random, labels.UserDefined];
 
 const startSimulation = {
@@ -115,7 +112,9 @@ const configOptions = {
 
 let lastSentConfigOptions = { ...configOptions };
 
+// Initialize canvas and event listeners
 resizeCanvas();
+setupInitialEventListeners();
 
 /**
  * Draws a Robot on the canvas
@@ -135,7 +134,7 @@ function drawRobot(robot) {
   ctx.fill();
   ctx.stroke();
 
-  // // Draw node label
+  // Draw node label
   ctx.beginPath();
   ctx.strokeStyle = "#FFF";
   ctx.strokeText(robot.id, x, y);
@@ -147,7 +146,6 @@ function drawRobot(robot) {
 
   // Draw multiplicity detection
   if (configOptions.multiplicity_detection) {
-    // Draw node label
     ctx.beginPath();
     ctx.strokeStyle = "#000";
     ctx.strokeText("" + robot.multiplicity, x + radius + 1, y - radius - 1);
@@ -169,6 +167,7 @@ function drawRobot(robot) {
     ctx.stroke();
   }
 }
+
 /**
  * Draws smallest enclosing circles
  * @param {Circle[]} circles - Smallest Enclosing Circles
@@ -185,9 +184,16 @@ function drawSEC(circles) {
     ctx.strokeStyle = "rgb(169 169 169 / 50%)";
 
     ctx.beginPath();
-
     ctx.arc(center_x, center_y, radius, 0, 2 * Math.PI);
     ctx.stroke();
+  }
+}
+
+function setupInitialEventListeners() {
+  // Set up click handler if UserDefined is selected by default
+  if (configOptions.initialization_method === labels.UserDefined) {
+    canvas.addEventListener("click", handleCanvasClick);
+    message.style.display = "block";
   }
 }
 
@@ -232,9 +238,7 @@ function setupOptions(configOptions) {
     .name("Clear Simulation");
 
   startSimulationBtn.domElement.parentElement.parentElement.classList.add("start-btn");
-
   pauseBtn.domElement.parentElement.parentElement.classList.add("pause-btn");
-
   clearSimulationBtn.domElement.parentElement.parentElement.classList.add(
     "clear-simulation-btn"
   );
@@ -254,19 +258,15 @@ function setupOptions(configOptions) {
     if (configOptions.initialization_method === labels.Random) {
       numRobotsControllerElement.parentElement.parentElement.style.display = "list-item";
       numRobotsController.setValue(3);
-
       canvas.removeEventListener("click", handleCanvasClick);
-
-      clearSimulation();
+      message.style.display = "none";
     } else {
       numRobotsControllerElement.parentElement.parentElement.style.display = "none";
       numRobotsController.setValue(0);
       message.style.display = "block";
-
       canvas.addEventListener("click", handleCanvasClick);
-
-      clearSimulation();
     }
+    clearSimulation();
   }
 
   function changeVisualizationRadius() {
@@ -284,9 +284,7 @@ function setupOptions(configOptions) {
 function startDrawingLoop() {
   stopAnimation = false;
   drawingSimulation = true;
-
-  // requestAnimationFrame initiates the animation loop
-  requestAnimationFrame(drawLoop); // Start the loop
+  requestAnimationFrame(drawLoop);
 }
 
 function stopDrawingLoop() {
@@ -302,61 +300,50 @@ function drawLoop(currentTime) {
   if (simulationId === undefined) {
     return;
   }
-  // Calculate the time since the last frame
+
   const deltaTime = currentTime - lastFrameTime;
 
-  // Check if enough time has passed to render a new frame
   if (deltaTime >= timePerFrameMs && !paused) {
     const snapshot = snapshotQueue.dequeue();
     if (snapshot) {
       clearCanvas();
       drawSnapshot(snapshot);
-      lastFrameTime = currentTime; // Reset lastFrameTime for the next frame
+      lastFrameTime = currentTime;
     } else {
       stopDrawingLoop();
       drawSEC(sec);
-
       return;
     }
   }
 
-  // Request the next frame
   requestAnimationFrame(drawLoop);
 }
 
 function clearCanvas() {
   ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(-canvas / 2, -canvas.height / 2, canvas.width, canvas.height);
-}
-
-function getRandomColor() {
-  const r = Math.floor(50 + Math.random() * 256);
-  const g = Math.floor(50 + Math.random() * 256);
-  const b = Math.floor(50 + Math.random() * 256);
-
-  return `rgb(${r}, ${g}, ${b})`;
+  ctx.fillRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
 }
 
 function resizeCanvas() {
-  // This function resets the canvas
   console.log("Resized Canvas");
-
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Translate the coordinate system to be in the center
+  // Reset transform and set new center
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.translate(canvas.width / 2, canvas.height / 2);
+  
   configOptions.width_bound = canvas.width / 2;
   configOptions.height_bound = canvas.height / 2;
 }
 
 /**
  * @param {Snapshot} snapshot
- * */
+ */
 function drawSnapshot(snapshot) {
   let time = snapshot[0];
   updateTimeElement(time);
@@ -391,15 +378,25 @@ function handleCanvasClick(e) {
     clearSimulation();
   }
 
-  console.log(e);
-  const x = e.offsetX;
-  const y = e.offsetY;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
 
-  const [canvasX, canvasY] = translateToCanvas(canvas, x, y);
+  // Convert to canvas coordinates (accounting for center translation)
+  const canvasX = x - canvas.width / 2;
+  const canvasY = y - canvas.height / 2;
+
+  // Convert to simulation coordinates
+  const simX = canvasX / Robot.ROBOT_X_POS_FACTOR;
+  const simY = -canvasY / Robot.ROBOT_X_POS_FACTOR;
+
+  console.log(`Clicked at screen: (${x}, ${y})`);
+  console.log(`Canvas coordinates: (${canvasX}, ${canvasY})`);
+  console.log(`Simulation coordinates: (${simX}, ${simY})`);
 
   const robot = new Robot(
-    canvasX,
-    canvasY,
+    simX,
+    simY,
     `${currRobotId++}`,
     configOptions.robot_colors,
     configOptions.robot_speeds,
@@ -408,11 +405,14 @@ function handleCanvasClick(e) {
   );
 
   robots[currRobotId - 1] = robot;
-
   drawRobot(robot);
 
-  configOptions.initial_positions.push(robot.getPosition());
+  configOptions.initial_positions.push([simX, simY]);
   message.style.display = "none";
+
+  // Visual feedback for click
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+  ctx.fillRect(canvasX-5, canvasY-5, 10, 10);
 }
 
 function clearSimulation() {
@@ -426,17 +426,9 @@ function clearSimulation() {
   currRobotId = 0;
   configOptions.initial_positions = [];
   paused = false;
-  gui.updatePauseText();
+  if (gui && gui.updatePauseText) {
+    gui.updatePauseText();
+  }
   sec = [];
   drawingSimulation = false;
-}
-
-/**
- * Converts mouse coordinates to coordinates on a canvas with origin at the center of screen
- * @param {HTMLCanvasElement} canvas - Canvas element
- * @param {number} x
- * @param {number} y
- */
-function translateToCanvas(canvas, x, y) {
-  return [x - canvas.width / 2, y - canvas.height / 2];
 }
