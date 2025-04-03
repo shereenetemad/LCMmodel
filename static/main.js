@@ -1,3 +1,4 @@
+const SIMULATION_SCALE_FACTOR = 100;
 import labels from "./labels.js";
 import Queue from "./Queue.js";
 import Robot from "./Robot.js";
@@ -190,11 +191,16 @@ function drawSEC(circles) {
 }
 
 function setupInitialEventListeners() {
-  // Set up click handler if UserDefined is selected by default
-  if (configOptions.initialization_method === labels.UserDefined) {
-    canvas.addEventListener("click", handleCanvasClick);
-    message.style.display = "block";
-  }
+  // Always bind click handler, but filter in handler
+  canvas.addEventListener("click", handleCanvasClick);
+  updateInitializationMessage();
+}
+
+function updateInitializationMessage() {
+  message.style.display = 
+    configOptions.initialization_method === labels.UserDefined 
+      ? "block" 
+      : "none";
 }
 
 const gui = setupOptions(configOptions);
@@ -258,13 +264,11 @@ function setupOptions(configOptions) {
     if (configOptions.initialization_method === labels.Random) {
       numRobotsControllerElement.parentElement.parentElement.style.display = "list-item";
       numRobotsController.setValue(3);
-      canvas.removeEventListener("click", handleCanvasClick);
-      message.style.display = "none";
+      updateInitializationMessage();
     } else {
       numRobotsControllerElement.parentElement.parentElement.style.display = "none";
       numRobotsController.setValue(0);
-      message.style.display = "block";
-      canvas.addEventListener("click", handleCanvasClick);
+      updateInitializationMessage();
     }
     clearSimulation();
   }
@@ -374,28 +378,33 @@ function updateTimeElement(t) {
  * @param {MouseEvent} e
  */
 function handleCanvasClick(e) {
+  // Only process in UserDefined mode
+  if (configOptions.initialization_method !== labels.UserDefined) return;
+
   if (time.innerText !== "") {
     clearSimulation();
   }
 
   const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = e.clientX - rect.left - canvas.width/2;  // Direct to canvas coords
+  const y = e.clientY - rect.top - canvas.height/2;
+  
+  const simX = x / Robot.ROBOT_X_POS_FACTOR;
+  const simY = -y / Robot.ROBOT_X_POS_FACTOR;
 
-  // Convert to canvas coordinates (accounting for center translation)
-  const canvasX = x - canvas.width / 2;
-  const canvasY = y - canvas.height / 2;
-
-  // Convert to simulation coordinates
-  const simX = canvasX / Robot.ROBOT_X_POS_FACTOR;
-  const simY = -canvasY / Robot.ROBOT_X_POS_FACTOR;
-
-  console.log(`Clicked at screen: (${x}, ${y})`);
-  console.log(`Canvas coordinates: (${canvasX}, ${canvasY})`);
+  console.log(`Clicked at screen: (${e.clientX}, ${e.clientY})`);
+  console.log(`Canvas coordinates: (${x}, ${y})`);
   console.log(`Simulation coordinates: (${simX}, ${simY})`);
 
+  // Visual feedback
+  ctx.fillStyle = 'rgba(0, 200, 0, 0.7)';
+  ctx.beginPath();
+  ctx.arc(x, y, 15, 0, Math.PI*2);
+  ctx.fill();
+
+  // Add robot
   const robot = new Robot(
-    simX,
+    simX, 
     simY,
     `${currRobotId++}`,
     configOptions.robot_colors,
@@ -403,16 +412,11 @@ function handleCanvasClick(e) {
     1,
     true
   );
-
-  robots[currRobotId - 1] = robot;
+  
+  robots[currRobotId-1] = robot;
   drawRobot(robot);
-
   configOptions.initial_positions.push([simX, simY]);
-  message.style.display = "none";
-
-  // Visual feedback for click
-  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-  ctx.fillRect(canvasX-5, canvasY-5, 10, 10);
+  updateInitializationMessage();
 }
 
 function clearSimulation() {
