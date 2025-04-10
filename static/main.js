@@ -145,11 +145,20 @@ setupInitialEventListeners();
 function drawRobot(robot) {
   ctx.beginPath();
 
-  const color = robot.getColor();
-  const radius = Robot.ROBOT_SIZE;
+  // Change color based on fault status
+  let color = robot.getColor();
+  if (robot.fault_type && robot.fault_type !== 'None') {
+    if (robot.fault_status === 'Triggered') {
+      color = 'red';
+    } else if (robot.fault_status === 'Active') {
+      color = 'orange';
+    }
+  }
 
-  // Draw circle
+  const radius = Robot.ROBOT_SIZE;
   const [x, y] = robot.getCanvasPosition();
+  
+  // Draw circle with fault indicator
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
@@ -163,6 +172,41 @@ function drawRobot(robot) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = `${radius + 1}px Arial`;
+  ctx.fill();
+  ctx.stroke();
+
+  // Draw multiplicity detection
+  if (configOptions.multiplicity_detection) {
+    ctx.beginPath();
+    ctx.strokeStyle = "#000";
+    ctx.strokeText("" + robot.multiplicity, x + radius + 1, y - radius - 1);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${radius + 1}px Arial`;
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Draw visibility radius
+  if (configOptions.show_visibility) {
+    const vis_radius = drawingSimulation
+      ? lastSentConfigOptions.visibility_radius
+      : configOptions.visibility_radius;
+
+    ctx.arc(x, y, vis_radius, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgb(169 169 169 / 25%)";
+    ctx.stroke();
+  }
+
+  // Draw fault status if it exists
+  if (robot.fault_type && robot.fault_type !== 'None') {
+    ctx.font = '10px Arial';
+    ctx.fillStyle = 'red';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${robot.fault_type} (${robot.fault_status})`, 
+                x, y + Robot.ROBOT_SIZE + 12);
+  }
+}px Arial`;
   ctx.fill();
   ctx.stroke();
 
@@ -464,11 +508,21 @@ function drawSnapshot(snapshot) {
     let [x, y] = robotsHistory[id][0];
     const multiplicity = robotsHistory[id][4];
     const state = robotsHistory[id][1];
-    const fault_type = robotsHistory[id][5] || 'None'; // Assuming fault type is at index 5
+    const fault_type = robotsHistory[id][5] || 'None';
+    const fault_status = robotsHistory[id][6] || 'None'; // ✅ ADDED
 
     if (robots[id] === undefined) {
       robots[id] = new Robot(x, y, id, "black", 1, multiplicity);
     }
+
+    robots[id].setPosition(x, y);
+    robots[id].setState(state);
+    robots[id].multiplicity = multiplicity;
+    robots[id].fault_type = fault_type;
+    robots[id].fault_status = fault_status; // ✅ ADDED
+    drawRobot(robots[id]);
+  }
+}
 
     robots[id].setPosition(x, y);
     robots[id].setState(state);
