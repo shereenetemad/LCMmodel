@@ -3,16 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visualization</title>
+    <title>Robot Simulation</title>
     <style>
-      body { margin: 0; overflow: hidden; }
-      canvas { display: block; width: 100vw; height: 100vh; }
+      body { margin: 0; overflow: hidden; font-family: Arial; }
+      #header {
+        padding: 10px;
+        background: #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+      }
+      #time-container { display: flex; }
+      #message { color: #666; font-style: italic; }
+      #canvas { display: block; width: 100vw; height: calc(100vh - 40px); }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
-    <script defer src="static/main.js"></script>
+    <script src="labels.js"></script>
+    <script src="Queue.js"></script>
+    <script src="Robot.js"></script>
+    <script src="main.js"></script>
   </head>
   <body>
+    <div id="header">
+      <div id="time-container">
+        <span id="time">Time: </span>
+        <span id="time-value">0</span>
+      </div>
+      <div id="message"></div>
+    </div>
     <canvas id="canvas"></canvas>
   </body>
 </html>
